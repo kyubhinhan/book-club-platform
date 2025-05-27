@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String     @id @default(cuid())
+  name        String
+  email       String     @unique
+  password    String
+  image       String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  ownedClubs  BookClub[] @relation("ClubOwner")
+  memberClubs BookClub[] @relation("ClubMembers")
+  posts       Post[]
+  meetings    Meeting[]  @relation("MeetingParticipants")
+}
+
+model BookClub {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  category    String
+  ownerId     String
+  owner       User      @relation("ClubOwner", fields: [ownerId], references: [id])
+  members     User[]    @relation("ClubMembers")
+  meetings    Meeting[]
+  posts       Post[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Meeting {
+  id           String            @id @default(cuid())
+  title        String
+  date         DateTime
+  location     String?
+  bookId       String
+  book         Book              @relation(fields: [bookId], references: [id])
+  clubId       String
+  club         BookClub          @relation(fields: [clubId], references: [id])
+  participants User[]            @relation("MeetingParticipants")
+  discussion   Discussion?
+  dateVotes    MeetingDateVote[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+model MeetingDateVote {
+  id        String   @id @default(cuid())
+  meetingId String
+  meeting   Meeting  @relation(fields: [meetingId], references: [id])
+  date      DateTime
+  votes     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Book {
+  id          String       @id @default(cuid())
+  title       String
+  author      String
+  description String?
+  isbn        String?
+  category    String
+  meetings    Meeting[]
+  discussions Discussion[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Discussion {
+  id        String   @id @default(cuid())
+  content   String
+  questions String[]
+  meetingId String   @unique
+  meeting   Meeting  @relation(fields: [meetingId], references: [id])
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  clubId    String
+  club      BookClub @relation(fields: [clubId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

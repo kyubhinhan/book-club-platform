@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 독서 모임 플랫폼
 
-## Getting Started
+AI 기반의 독서 모임 운영 플랫폼입니다. 도서 추천부터 발제문 생성, 모임 일정 관리까지 독서 모임 운영에 필요한 다양한 기능을 제공합니다.
 
-First, run the development server:
+## 주요 기능
+
+- 🤖 AI 기반 도서 추천
+- 📝 발제문 자동 생성
+- 📅 모임 일정 관리 및 투표
+- 📚 자료 공유 게시판
+
+## 기술 스택
+
+- Frontend: Next.js, React, TypeScript, Tailwind CSS
+- Backend: Next.js API Routes
+- Database: PostgreSQL with Prisma ORM
+- AI: OpenAI API
+
+## 시작하기
+
+1. 저장소 클론
+
+```bash
+git clone https://github.com/[username]/book-club-platform.git
+cd book-club-platform
+```
+
+2. 의존성 설치
+
+```bash
+npm install
+```
+
+3. 환경 변수 설정
+   `.env` 파일을 생성하고 다음 변수들을 설정합니다:
+
+```
+DATABASE_URL="postgresql://..."
+OPENAI_API_KEY="your-api-key"
+```
+
+4. 데이터베이스 마이그레이션
+
+```bash
+npx prisma migrate dev
+```
+
+5. 개발 서버 실행
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 환경 변수
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `DATABASE_URL`: PostgreSQL 데이터베이스 연결 URL
+- `OPENAI_API_KEY`: OpenAI API 키
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 기여하기
 
-## Learn More
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-To learn more about Next.js, take a look at the following resources:
+## 라이선스
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT License
