@@ -1,5 +1,6 @@
+"use client";
+
 import { useState } from 'react';
-import { Book } from '@prisma/client';
 
 const categories = [
   { id: 'literature', name: '문학' },
@@ -10,7 +11,11 @@ const categories = [
   { id: 'social-science', name: '사회과학' },
 ];
 
-interface BookWithSummary extends Book {
+interface BookWithSummary {
+  id: string;
+  title: string;
+  author: string;
+  description: string;
   summary: string;
 }
 
