@@ -1,7 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Listbox } from '@headlessui/react';
+import {
+  Listbox,
+  ListboxButton,
+  ListboxOptions,
+  ListboxOption,
+} from '@headlessui/react';
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid';
 
 const categories = [
@@ -93,7 +98,7 @@ export default function BookRecommendation() {
           <div className="flex-1">
             <Listbox value={selectedCategory} onChange={setSelectedCategory}>
               <div className="relative mt-1">
-                <Listbox.Button
+                <ListboxButton
                   className={`
                   relative w-full cursor-default rounded-lg bg-white py-2 pl-3 pr-10 
                   text-left border border-gray-300 focus:outline-none 
@@ -112,8 +117,8 @@ export default function BookRecommendation() {
                       aria-hidden="true"
                     />
                   </span>
-                </Listbox.Button>
-                <Listbox.Options
+                </ListboxButton>
+                <ListboxOptions
                   className={`
                   absolute mt-1 max-h-60 w-full overflow-auto rounded-md 
                   bg-white py-1 text-base shadow-lg ring-1 ring-black/5 
@@ -121,7 +126,7 @@ export default function BookRecommendation() {
                 `}
                 >
                   {categories.map((category) => (
-                    <Listbox.Option
+                    <ListboxOption
                       key={category.id}
                       className={({ active }) => `
                         relative cursor-default select-none py-2 pl-10 pr-4
@@ -152,9 +157,9 @@ export default function BookRecommendation() {
                           ) : null}
                         </>
                       )}
-                    </Listbox.Option>
+                    </ListboxOption>
                   ))}
-                </Listbox.Options>
+                </ListboxOptions>
               </div>
             </Listbox>
           </div>
