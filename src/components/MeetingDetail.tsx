@@ -48,7 +48,9 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
         dateVotes: votesData.votes,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+      setError(
+        err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
+      );
     } finally {
       setLoading(false);
     }
@@ -72,7 +74,9 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
       // 투표 결과 새로고침
       await fetchMeetingDetails();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+      setError(
+        err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
+      );
     } finally {
       setVotingLoading(null);
     }
@@ -84,9 +88,7 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
 
   if (error) {
     return (
-      <div className="p-4 bg-red-100 text-red-700 rounded-lg">
-        {error}
-      </div>
+      <div className="p-4 bg-red-100 text-red-700 rounded-lg">{error}</div>
     );
   }
 
@@ -132,7 +134,7 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
 
       <div className="flex justify-end">
         <button
-          onClick={() => window.location.href = '/meetings'}
+          onClick={() => (window.location.href = '/meetings')}
           className="px-4 py-2 text-gray-600 hover:text-gray-900"
         >
           목록으로 돌아가기
@@ -140,4 +142,4 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
       </div>
     </div>
   );
-} 
+}

@@ -11,4 +11,4 @@ export default function MeetingPage({ params }: { params: { id: string } }) {
       </div>
     </main>
   );
-} 
+}

@@ -56,8 +56,8 @@ function parseQuestions(questionsText: string): string[] {
   // 텍스트에서 질문들을 추출
   const questions = questionsText
     .split('\n')
-    .filter(line => line.trim().match(/^\d+[\.\)]\s+.+/)) // 숫자로 시작하는 라인만 선택
-    .map(line => line.replace(/^\d+[\.\)]\s+/, '').trim()); // 숫자와 구분자 제거
+    .filter((line) => line.trim().match(/^\d+[\.\)]\s+.+/)) // 숫자로 시작하는 라인만 선택
+    .map((line) => line.replace(/^\d+[\.\)]\s+/, '').trim()); // 숫자와 구분자 제거
 
   return questions;
-} 
+}

@@ -31,7 +31,9 @@ export default function MeetingList() {
       const data = await response.json();
       setMeetings(data.meetings);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+      setError(
+        err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
+      );
     } finally {
       setLoading(false);
     }
@@ -43,9 +45,7 @@ export default function MeetingList() {
 
   if (error) {
     return (
-      <div className="p-4 bg-red-100 text-red-700 rounded-lg">
-        {error}
-      </div>
+      <div className="p-4 bg-red-100 text-red-700 rounded-lg">{error}</div>
     );
   }
 
@@ -92,4 +92,4 @@ export default function MeetingList() {
       ))}
     </div>
   );
-} 
+}

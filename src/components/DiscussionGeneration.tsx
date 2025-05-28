@@ -42,7 +42,9 @@ export default function DiscussionGeneration() {
       const data = await response.json();
       setDiscussion(data.discussion);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+      setError(
+        err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
+      );
     } finally {
       setLoading(false);
     }
@@ -105,7 +107,7 @@ export default function DiscussionGeneration() {
           </div>
 
           <button
-            onClick={() => window.location.href = '/meetings/new'}
+            onClick={() => (window.location.href = '/meetings/new')}
             className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
           >
             모임 일정 만들기
@@ -114,4 +116,4 @@ export default function DiscussionGeneration() {
       )}
     </div>
   );
-} 
+}

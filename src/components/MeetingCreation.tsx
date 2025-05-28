@@ -11,7 +11,7 @@ export default function MeetingCreation() {
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
   const [dateOptions, setDateOptions] = useState<DateOption[]>([
-    { date: format(new Date(), 'yyyy-MM-dd\'T\'HH:mm'), votes: 0 }
+    { date: format(new Date(), "yyyy-MM-dd'T'HH:mm"), votes: 0 },
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +19,7 @@ export default function MeetingCreation() {
   const addDateOption = () => {
     setDateOptions([
       ...dateOptions,
-      { date: format(new Date(), 'yyyy-MM-dd\'T\'HH:mm'), votes: 0 }
+      { date: format(new Date(), "yyyy-MM-dd'T'HH:mm"), votes: 0 },
     ]);
   };
 
@@ -64,7 +64,9 @@ export default function MeetingCreation() {
       // 생성된 모임 페이지로 이동
       window.location.href = `/meetings/${data.meeting.id}`;
     } catch (err) {
-      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+      setError(
+        err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
+      );
     } finally {
       setLoading(false);
     }
@@ -76,7 +78,10 @@ export default function MeetingCreation() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+          <label
+            htmlFor="title"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
             모임 제목
           </label>
           <input
@@ -90,7 +95,10 @@ export default function MeetingCreation() {
         </div>
 
         <div>
-          <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+          <label
+            htmlFor="location"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
             모임 장소
           </label>
           <input
@@ -116,7 +124,7 @@ export default function MeetingCreation() {
               + 일정 추가
             </button>
           </div>
-          
+
           <div className="space-y-3">
             {dateOptions.map((option, index) => (
               <div key={index} className="flex gap-2">
@@ -142,9 +150,7 @@ export default function MeetingCreation() {
         </div>
 
         {error && (
-          <div className="p-4 bg-red-100 text-red-700 rounded-lg">
-            {error}
-          </div>
+          <div className="p-4 bg-red-100 text-red-700 rounded-lg">{error}</div>
         )}
 
         <button
@@ -157,4 +163,4 @@ export default function MeetingCreation() {
       </form>
     </div>
   );
-} 
+}

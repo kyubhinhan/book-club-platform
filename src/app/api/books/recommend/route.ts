@@ -14,8 +14,11 @@ export async function POST(request: Request) {
     }
 
     // AI를 통한 도서 추천 받기
-    const recommendationsText = await generateBookRecommendations(category, count);
-    
+    const recommendationsText = await generateBookRecommendations(
+      category,
+      count
+    );
+
     // 추천된 도서들을 파싱하고 데이터베이스에 저장
     const books = await parseAndSaveBooks(recommendationsText, category);
 
@@ -29,7 +32,10 @@ export async function POST(request: Request) {
   }
 }
 
-async function parseAndSaveBooks(recommendationsText: string, category: string) {
+async function parseAndSaveBooks(
+  recommendationsText: string,
+  category: string
+) {
   // 텍스트를 파싱하여 책 정보 추출
   const books = [];
   const bookEntries = recommendationsText.split('\n\n');
@@ -38,9 +44,12 @@ async function parseAndSaveBooks(recommendationsText: string, category: string) 
     if (!entry.trim()) continue;
 
     // 기본적인 파싱 로직 (실제 응답 형식에 따라 조정 필요)
-    const titleMatch = entry.match(/제목:\s*(.+)/i) || entry.match(/^(.+?)(?:\s*-|$)/);
-    const authorMatch = entry.match(/저자:\s*(.+)/i) || entry.match(/저자:\s*(.+)/);
-    const descriptionMatch = entry.match(/설명:\s*(.+)/i) || entry.match(/\n(.+)$/);
+    const titleMatch =
+      entry.match(/제목:\s*(.+)/i) || entry.match(/^(.+?)(?:\s*-|$)/);
+    const authorMatch =
+      entry.match(/저자:\s*(.+)/i) || entry.match(/저자:\s*(.+)/);
+    const descriptionMatch =
+      entry.match(/설명:\s*(.+)/i) || entry.match(/\n(.+)$/);
 
     if (titleMatch) {
       const title = titleMatch[1].trim();
@@ -59,7 +68,7 @@ async function parseAndSaveBooks(recommendationsText: string, category: string) 
 
       // 책에 대한 추가 설명 생성
       const summary = await generateBookSummary(title, author);
-      
+
       books.push({
         ...book,
         summary,
@@ -68,4 +77,4 @@ async function parseAndSaveBooks(recommendationsText: string, category: string) 
   }
 
   return books;
-} 
+}
