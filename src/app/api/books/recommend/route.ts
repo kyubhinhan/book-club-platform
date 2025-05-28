@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { generateBookRecommendations, generateBookSummary } from '@/lib/openai';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: Request) {
   try {
@@ -18,6 +18,13 @@ export async function POST(request: Request) {
       category,
       count
     );
+
+    if (!recommendationsText) {
+      return NextResponse.json(
+        { error: '도서 추천을 생성하는데 실패했습니다.' },
+        { status: 500 }
+      );
+    }
 
     // 추천된 도서들을 파싱하고 데이터베이스에 저장
     const books = await parseAndSaveBooks(recommendationsText, category);

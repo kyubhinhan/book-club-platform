@@ -11,7 +11,7 @@ export async function generateBookRecommendations(
   const prompt = `독서 모임을 위한 ${category} 분야의 책을 ${count}권 추천해주세요. 각 책에 대해 제목, 저자, 간단한 설명을 포함해주세요.`;
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-3.5-turbo',
     messages: [
       {
         role: 'system',
@@ -37,7 +37,7 @@ export async function generateDiscussionQuestions(
   const prompt = `"${bookTitle}"에 대한 독서 모임 발제 질문 ${questionCount}개를 생성해주세요. 책 설명: ${bookDescription}`;
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-3.5-turbo',
     messages: [
       {
         role: 'system',
@@ -59,7 +59,7 @@ export async function generateBookSummary(bookTitle: string, author: string) {
   const prompt = `"${bookTitle}" (저자: ${author})에 대한 간단한 소개와 이 책이 독서 모임에서 논의하기 좋은 이유를 설명해주세요.`;
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4-turbo-preview',
+    model: 'gpt-3.5-turbo',
     messages: [
       {
         role: 'system',
