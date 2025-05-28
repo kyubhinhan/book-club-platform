@@ -21,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="ko" className="dark">
       <body
-        className={`${notoSansKr.variable} font-noto-sans-kr antialiased bg-gray-900 text-gray-100`}
+        className={`${notoSansKr.variable} antialiased bg-gray-900 text-gray-100`}
       >
         {children}
       </body>
