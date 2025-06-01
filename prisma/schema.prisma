@@ -73,8 +73,12 @@ model Book {
   title       String
   author      String
   description String?
-  isbn        String?
+  isbn        BigInt?     @unique  // ISBN을 BigInt로 저장 (13자리 숫자를 안전하게 저장하기 위해)
   category    String
+  imageUrl    String?      // 도서 표지 이미지 URL
+  publisher   String?      // 출판사
+  price       Int?         // 가격
+  pubDate     DateTime?    // 출간일
   meetings    Meeting[]
   discussions Discussion[]
   createdAt   DateTime     @default(now())

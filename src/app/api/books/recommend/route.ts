@@ -1,6 +1,69 @@
 import { NextResponse } from 'next/server';
 import { generateBookRecommendations, generateBookSummary } from '@/lib/openai';
 import { prisma } from '@/lib/prisma';
+import { searchBookByTitleAndAuthor } from '@/lib/books';
+
+interface BookRecommendation {
+  title: string;
+  author: string;
+}
+
+function parseRecommendations(text: string): BookRecommendation[] {
+  const books: BookRecommendation[] = [];
+  const entries = text.split('\n---\n');
+
+  for (const entry of entries) {
+    if (!entry.trim()) continue;
+
+    const titleMatch = entry.match(/제목:\s*(.+)/);
+    const authorMatch = entry.match(/저자:\s*(.+)/);
+
+    if (titleMatch && authorMatch) {
+      books.push({
+        title: titleMatch[1].trim(),
+        author: authorMatch[1].trim(),
+      });
+    }
+  }
+
+  return books;
+}
+
+async function findOrFetchBook(title: string, author: string) {
+  // 1. 데이터베이스에서 제목과 저자로 검색
+  const existingBook = await prisma.book.findFirst({
+    where: {
+      AND: [{ title: { contains: title } }, { author: { contains: author } }],
+    },
+  });
+
+  if (existingBook) {
+    return existingBook;
+  }
+
+  // 2. 데이터베이스에 없으면 네이버 API로 검색
+  const bookInfo = await searchBookByTitleAndAuthor(title, author);
+  console.log(bookInfo);
+
+  if (!bookInfo.success || !bookInfo.book) {
+    return null;
+  }
+
+  // 3. 검색 결과를 데이터베이스에 저장
+  return await prisma.book.create({
+    data: {
+      title: bookInfo.book.title,
+      author: bookInfo.book.author,
+      description: bookInfo.book.description,
+      isbn: bookInfo.book.isbn,
+      category: '', // 카테고리는 나중에 설정
+      imageUrl: bookInfo.book.imageUrl,
+      publisher: bookInfo.book.publisher,
+      price: bookInfo.book.price,
+      pubDate: bookInfo.book.pubDate,
+    },
+  });
+}
 
 export async function POST(request: Request) {
   try {
@@ -26,8 +89,38 @@ export async function POST(request: Request) {
       );
     }
 
-    // 추천된 도서들을 파싱하고 데이터베이스에 저장
-    const books = await parseAndSaveBooks(recommendationsText, category);
+    // 추천된 도서 파싱
+    const recommendations = parseRecommendations(recommendationsText);
+
+    // 각 도서 정보 조회 및 저장
+    const books = [];
+    for (const rec of recommendations) {
+      const book = await findOrFetchBook(rec.title, rec.author);
+      if (book) {
+        // 카테고리 업데이트
+        const updatedBook = await prisma.book.update({
+          where: { id: book.id },
+          data: { category },
+        });
+
+        try {
+          // 책에 대한 추가 설명 생성
+          const summary = await generateBookSummary(updatedBook.isbn!);
+          books.push({
+            ...updatedBook,
+            isbn: updatedBook.isbn?.toString(),
+            summary,
+          });
+        } catch (error) {
+          console.error(`도서 설명 생성 중 오류:`, error);
+          books.push({
+            ...updatedBook,
+            isbn: updatedBook.isbn?.toString(),
+            summary: '도서 설명을 생성하는 중 오류가 발생했습니다.',
+          });
+        }
+      }
+    }
 
     return NextResponse.json({ books });
   } catch (error) {
@@ -37,51 +130,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
-
-async function parseAndSaveBooks(
-  recommendationsText: string,
-  category: string
-) {
-  // 텍스트를 파싱하여 책 정보 추출
-  const books = [];
-  const bookEntries = recommendationsText.split('\n\n');
-
-  for (const entry of bookEntries) {
-    if (!entry.trim()) continue;
-
-    // 기본적인 파싱 로직 (실제 응답 형식에 따라 조정 필요)
-    const titleMatch =
-      entry.match(/제목:\s*(.+)/i) || entry.match(/^(.+?)(?:\s*-|$)/);
-    const authorMatch =
-      entry.match(/저자:\s*(.+)/i) || entry.match(/저자:\s*(.+)/);
-    const descriptionMatch =
-      entry.match(/설명:\s*(.+)/i) || entry.match(/\n(.+)$/);
-
-    if (titleMatch) {
-      const title = titleMatch[1].trim();
-      const author = authorMatch ? authorMatch[1].trim() : '저자 미상';
-      const description = descriptionMatch ? descriptionMatch[1].trim() : '';
-
-      // 책 정보를 데이터베이스에 저장
-      const book = await prisma.book.create({
-        data: {
-          title,
-          author,
-          description,
-          category,
-        },
-      });
-
-      // 책에 대한 추가 설명 생성
-      const summary = await generateBookSummary(title, author);
-
-      books.push({
-        ...book,
-        summary,
-      });
-    }
-  }
-
-  return books;
 }
