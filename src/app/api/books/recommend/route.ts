@@ -94,10 +94,13 @@ export async function POST(request: Request) {
     // 추천된 도서 파싱
     const recommendations = parseRecommendations(recommendationsText);
 
+    console.log(recommendations, '추천된 도서');
+
     // 각 도서 정보 조회 및 저장
     const books = [];
     for (const rec of recommendations) {
       const book = await findOrFetchBook(rec.title, rec.author);
+      console.log(book, '조회된 도서');
       if (book) {
         // 카테고리 업데이트
         const updatedBook = await prisma.book.update({

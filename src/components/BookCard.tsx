@@ -12,14 +12,14 @@ export interface BookWithSummary {
 
 export default function BookCard({ book }: { book: BookWithSummary }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const isLongDescription = book.description.length > 200;
+  const isLongDescription = book.description.length > 150;
   const displayDescription =
     isLongDescription && !isExpanded
-      ? `${book.description.slice(0, 200)}...`
+      ? `${book.description.slice(0, 150)}...`
       : book.description;
 
   return (
-    <div className="flex gap-8 p-6 border rounded-xl hover:shadow-lg transition-shadow bg-white h-[500px]">
+    <div className="flex gap-8 p-6 border rounded-xl hover:shadow-lg transition-shadow bg-white h-[500px] overflow-hidden">
       {/* 책 이미지 */}
       <div className="w-1/3 flex-shrink-0">
         <Image
@@ -32,15 +32,19 @@ export default function BookCard({ book }: { book: BookWithSummary }) {
       </div>
 
       {/* 책 정보 */}
-      <div className="w-2/3 flex flex-col h-full">
+      <div className="w-2/3 flex flex-col h-full overflow-hidden">
         {/* 제목과 저자 정보 */}
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">{book.title}</h2>
-          <p className="text-lg text-gray-600 mt-2">저자: {book.author}</p>
+        <div className="mb-4 flex-shrink-0">
+          <h2 className="text-xl font-semibold text-gray-900 truncate">
+            {book.title}
+          </h2>
+          <p className="text-lg text-gray-600 mt-2 truncate">
+            저자: {book.author}
+          </p>
         </div>
 
         {/* 스크롤 가능한 설명 영역 */}
-        <div className="relative flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-hidden">
           <div className="h-full overflow-y-auto pr-4">
             <div className="relative">
               <p className="text-gray-700 leading-relaxed">
