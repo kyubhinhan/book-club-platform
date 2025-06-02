@@ -117,6 +117,7 @@ export async function POST(request: Request) {
     const validBooks = [];
     let attempts = 0;
     const maxAttempts = 3;
+    const addedBookIds = new Set<string>(); // 명시적으로 string 타입 지정
 
     while (validBooks.length < count && attempts < maxAttempts) {
       const remainingCount = count - validBooks.length;
@@ -139,7 +140,9 @@ export async function POST(request: Request) {
 
         const book = await findOrFetchBook(rec.title, rec.author, rec.reason);
 
-        if (book) {
+        if (book && !addedBookIds.has(book.id)) {
+          // 중복 체크 추가
+          addedBookIds.add(book.id); // ID를 Set에 추가
           const updatedBook = await prisma.book.update({
             where: { id: book.id },
             data: {
@@ -162,7 +165,7 @@ export async function POST(request: Request) {
     // AI 추천으로 충분한 책을 못 찾았다면 DB에서 추가
     if (validBooks.length < count) {
       const remainingCount = count - validBooks.length;
-      const existingIds = validBooks.map((book) => book.id);
+      const existingIds: string[] = Array.from(addedBookIds); // 명시적으로 string[] 타입 지정
 
       const additionalBooks = await getRandomBooksFromDB(
         category,
