@@ -79,6 +79,7 @@ model Book {
   publisher   String?      // 출판사
   price       Int?         // 가격
   pubDate     DateTime?    // 출간일
+  recommendationReason String?  // 추천 이유
   meetings    Meeting[]
   discussions Discussion[]
   createdAt   DateTime     @default(now())

@@ -32,7 +32,11 @@ function parseRecommendations(text: string): BookRecommendation[] {
   return books;
 }
 
-async function findOrFetchBook(title: string, author: string) {
+async function findOrFetchBook(
+  title: string,
+  author: string,
+  recommendationReason?: string
+) {
   // 1. 데이터베이스에서 제목과 저자로 검색
   const existingBook = await prisma.book.findFirst({
     where: {
@@ -41,6 +45,18 @@ async function findOrFetchBook(title: string, author: string) {
   });
 
   if (existingBook) {
+    // 추천 이유가 있으면 업데이트
+    if (
+      recommendationReason &&
+      existingBook.recommendationReason !== recommendationReason
+    ) {
+      return await prisma.book.update({
+        where: { id: existingBook.id },
+        data: {
+          recommendationReason,
+        },
+      });
+    }
     return existingBook;
   }
 
@@ -63,7 +79,27 @@ async function findOrFetchBook(title: string, author: string) {
       publisher: bookInfo.book.publisher,
       price: bookInfo.book.price,
       pubDate: bookInfo.book.pubDate,
+      recommendationReason, // 추천 이유 저장
     },
+  });
+}
+
+async function getRandomBooksFromDB(
+  category: string,
+  count: number,
+  excludeIds: string[]
+) {
+  return await prisma.book.findMany({
+    where: {
+      category,
+      id: {
+        notIn: excludeIds,
+      },
+    },
+    orderBy: {
+      id: 'desc',
+    },
+    take: count,
   });
 }
 
@@ -80,14 +116,13 @@ export async function POST(request: Request) {
 
     const validBooks = [];
     let attempts = 0;
-    const maxAttempts = 3; // 최대 3번까지 시도
+    const maxAttempts = 3;
 
     while (validBooks.length < count && attempts < maxAttempts) {
-      // AI를 통한 도서 추천 받기 (남은 개수만큼 요청)
       const remainingCount = count - validBooks.length;
       const recommendationsText = await generateBookRecommendations(
         category,
-        remainingCount + 2 // 여유있게 2개 더 요청
+        remainingCount + 2
       );
 
       if (!recommendationsText) {
@@ -97,31 +132,53 @@ export async function POST(request: Request) {
         );
       }
 
-      // 추천된 도서 파싱
       const recommendations = parseRecommendations(recommendationsText);
 
-      // 각 도서 정보 조회 및 저장
       for (const rec of recommendations) {
         if (validBooks.length >= count) break;
 
-        const book = await findOrFetchBook(rec.title, rec.author);
+        const book = await findOrFetchBook(rec.title, rec.author, rec.reason);
 
         if (book) {
-          // 카테고리 업데이트
           const updatedBook = await prisma.book.update({
             where: { id: book.id },
-            data: { category },
+            data: {
+              category,
+              recommendationReason: rec.reason,
+            },
           });
 
           validBooks.push({
             ...updatedBook,
             isbn: updatedBook.isbn?.toString(),
-            summary: rec.reason,
+            summary: updatedBook.recommendationReason || rec.reason,
           });
         }
       }
 
       attempts++;
+    }
+
+    // AI 추천으로 충분한 책을 못 찾았다면 DB에서 추가
+    if (validBooks.length < count) {
+      const remainingCount = count - validBooks.length;
+      const existingIds = validBooks.map((book) => book.id);
+
+      const additionalBooks = await getRandomBooksFromDB(
+        category,
+        remainingCount,
+        existingIds
+      );
+
+      validBooks.push(
+        ...additionalBooks.map((book) => ({
+          ...book,
+          isbn: book.isbn?.toString(),
+          summary:
+            book.recommendationReason ||
+            '이 분야의 인기 도서로, 많은 독자들에게 좋은 평가를 받았습니다.',
+        }))
+      );
     }
 
     if (validBooks.length === 0) {
