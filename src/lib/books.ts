@@ -46,9 +46,10 @@ export async function searchBookByTitleAndAuthor(
       throw new Error('네이버 API 키가 설정되지 않았습니다.');
     }
 
-    const url = new URL('https://openapi.naver.com/v1/search/book.json');
-    url.searchParams.append('query', `${title} ${author}`);
-    url.searchParams.append('display', '1'); // 가장 연관성 높은 결과 1개만 가져오기
+    const url = new URL('https://openapi.naver.com/v1/search/book_adv.json');
+    // d_titl: 책 제목으로 검색
+    url.searchParams.append('d_titl', title);
+    url.searchParams.append('display', '10');
 
     const response = await fetch(url.toString(), {
       headers: {
@@ -70,7 +71,22 @@ export async function searchBookByTitleAndAuthor(
       };
     }
 
-    const bookInfo = data.items[0];
+    // 정확도를 높이기 위해 제목과 저자가 정확히 일치하는 도서 찾기
+    const exactMatch = data.items.find((item) => {
+      const cleanItemTitle = item.title.replace(/<[^>]*>?/g, '').toLowerCase();
+      const cleanItemAuthor = item.author
+        .replace(/<[^>]*>?/g, '')
+        .toLowerCase();
+      const cleanSearchTitle = title.toLowerCase();
+      const cleanSearchAuthor = author.toLowerCase();
+
+      return (
+        cleanItemTitle.includes(cleanSearchTitle) &&
+        cleanItemAuthor.includes(cleanSearchAuthor)
+      );
+    });
+
+    const bookInfo = exactMatch || data.items[0];
 
     // HTML 태그 제거 및 특수문자 처리
     const cleanTitle = bookInfo.title.replace(/<[^>]*>?/g, '');

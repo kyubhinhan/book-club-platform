@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { useState } from 'react';
 
 export interface BookWithSummary {
   id: string;
@@ -10,36 +11,71 @@ export interface BookWithSummary {
 }
 
 export default function BookCard({ book }: { book: BookWithSummary }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const isLongDescription = book.description.length > 200;
+  const displayDescription =
+    isLongDescription && !isExpanded
+      ? `${book.description.slice(0, 200)}...`
+      : book.description;
+
   return (
-    <div className="flex gap-6 p-6 border rounded-lg hover:shadow-lg transition-shadow">
+    <div className="flex gap-8 p-6 border rounded-xl hover:shadow-lg transition-shadow bg-white h-[500px]">
       {/* 책 이미지 */}
-      <Image
-        src={book.imageUrl || '/images/book-placeholder.svg'}
-        alt={`${book.title} 표지`}
-        width={192}
-        height={256}
-        className="flex-shrink-0 object-cover rounded-lg shadow-md"
-      />
+      <div className="w-1/3 flex-shrink-0">
+        <Image
+          src={book.imageUrl || '/images/book-placeholder.svg'}
+          alt={`${book.title} 표지`}
+          width={240}
+          height={320}
+          className="w-full h-full object-cover rounded-lg shadow-md"
+        />
+      </div>
 
       {/* 책 정보 */}
-      <div className="flex-1">
-        <h2 className="text-xl font-semibold mb-2 text-gray-900">
-          {book.title}
-        </h2>
-        <p className="text-gray-600 mb-2">저자: {book.author}</p>
-        <p className="text-gray-700 mb-4">{book.description}</p>
-        <div className="bg-gray-50 p-4 rounded-lg mb-4">
-          <h3 className="font-medium mb-2 text-gray-900">추천 이유</h3>
-          <p className="text-gray-700">{book.summary}</p>
+      <div className="w-2/3 flex flex-col h-full">
+        {/* 제목과 저자 정보 */}
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">{book.title}</h2>
+          <p className="text-lg text-gray-600 mt-2">저자: {book.author}</p>
         </div>
-        <button
-          onClick={() =>
-            (window.location.href = `/discussions/new?bookId=${book.id}`)
-          }
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-        >
-          발제문 생성하기
-        </button>
+
+        {/* 스크롤 가능한 설명 영역 */}
+        <div className="relative flex-1 min-h-0">
+          <div className="h-full overflow-y-auto pr-4">
+            <div className="relative">
+              <p className="text-gray-700 leading-relaxed">
+                {displayDescription}
+              </p>
+              {isLongDescription && (
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="text-blue-600 hover:text-blue-800 mt-2 text-sm font-medium cursor-pointer hover:underline"
+                >
+                  {isExpanded ? '접기' : '펼치기'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 고정된 하단 영역 */}
+        <div className="mt-4 space-y-4 flex-shrink-0">
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+            <h3 className="font-semibold mb-2 text-blue-900">📚 추천 이유</h3>
+            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+              {book.summary}
+            </p>
+          </div>
+
+          <button
+            onClick={() =>
+              (window.location.href = `/discussions/new?bookId=${book.id}`)
+            }
+            className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+          >
+            <span>✍️ 발제문 생성하기</span>
+          </button>
+        </div>
       </div>
     </div>
   );

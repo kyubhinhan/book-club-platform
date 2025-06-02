@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
-import { generateBookRecommendations, generateBookSummary } from '@/lib/openai';
+import { generateBookRecommendations } from '@/lib/openai';
 import { prisma } from '@/lib/prisma';
 import { searchBookByTitleAndAuthor } from '@/lib/books';
 
 interface BookRecommendation {
   title: string;
   author: string;
+  reason: string;
 }
 
 function parseRecommendations(text: string): BookRecommendation[] {
@@ -17,11 +18,13 @@ function parseRecommendations(text: string): BookRecommendation[] {
 
     const titleMatch = entry.match(/제목:\s*(.+)/);
     const authorMatch = entry.match(/저자:\s*(.+)/);
+    const reasonMatch = entry.match(/추천 이유:\s*(.+)/);
 
-    if (titleMatch && authorMatch) {
+    if (titleMatch && authorMatch && reasonMatch) {
       books.push({
         title: titleMatch[1].trim(),
         author: authorMatch[1].trim(),
+        reason: reasonMatch[1].trim(),
       });
     }
   }
@@ -43,7 +46,6 @@ async function findOrFetchBook(title: string, author: string) {
 
   // 2. 데이터베이스에 없으면 네이버 API로 검색
   const bookInfo = await searchBookByTitleAndAuthor(title, author);
-  console.log(bookInfo);
 
   if (!bookInfo.success || !bookInfo.book) {
     return null;
@@ -103,22 +105,11 @@ export async function POST(request: Request) {
           data: { category },
         });
 
-        try {
-          // 책에 대한 추가 설명 생성
-          const summary = await generateBookSummary(updatedBook.isbn!);
-          books.push({
-            ...updatedBook,
-            isbn: updatedBook.isbn?.toString(),
-            summary,
-          });
-        } catch (error) {
-          console.error(`도서 설명 생성 중 오류:`, error);
-          books.push({
-            ...updatedBook,
-            isbn: updatedBook.isbn?.toString(),
-            summary: '도서 설명을 생성하는 중 오류가 발생했습니다.',
-          });
-        }
+        books.push({
+          ...updatedBook,
+          isbn: updatedBook.isbn?.toString(),
+          summary: rec.reason,
+        });
       }
     }
 
