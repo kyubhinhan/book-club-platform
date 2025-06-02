@@ -78,45 +78,60 @@ export async function POST(request: Request) {
       );
     }
 
-    // AI를 통한 도서 추천 받기
-    const recommendationsText = await generateBookRecommendations(
-      category,
-      count
-    );
+    const validBooks = [];
+    let attempts = 0;
+    const maxAttempts = 3; // 최대 3번까지 시도
 
-    if (!recommendationsText) {
+    while (validBooks.length < count && attempts < maxAttempts) {
+      // AI를 통한 도서 추천 받기 (남은 개수만큼 요청)
+      const remainingCount = count - validBooks.length;
+      const recommendationsText = await generateBookRecommendations(
+        category,
+        remainingCount + 2 // 여유있게 2개 더 요청
+      );
+
+      if (!recommendationsText) {
+        return NextResponse.json(
+          { error: '도서 추천을 생성하는데 실패했습니다.' },
+          { status: 500 }
+        );
+      }
+
+      // 추천된 도서 파싱
+      const recommendations = parseRecommendations(recommendationsText);
+
+      // 각 도서 정보 조회 및 저장
+      for (const rec of recommendations) {
+        if (validBooks.length >= count) break;
+
+        const book = await findOrFetchBook(rec.title, rec.author);
+
+        if (book) {
+          // 카테고리 업데이트
+          const updatedBook = await prisma.book.update({
+            where: { id: book.id },
+            data: { category },
+          });
+
+          validBooks.push({
+            ...updatedBook,
+            isbn: updatedBook.isbn?.toString(),
+            summary: rec.reason,
+          });
+        }
+      }
+
+      attempts++;
+    }
+
+    if (validBooks.length === 0) {
       return NextResponse.json(
-        { error: '도서 추천을 생성하는데 실패했습니다.' },
-        { status: 500 }
+        { error: '유효한 도서를 찾을 수 없습니다.' },
+        { status: 404 }
       );
     }
 
-    // 추천된 도서 파싱
-    const recommendations = parseRecommendations(recommendationsText);
-
-    console.log(recommendations, '추천된 도서');
-
-    // 각 도서 정보 조회 및 저장
-    const books = [];
-    for (const rec of recommendations) {
-      const book = await findOrFetchBook(rec.title, rec.author);
-      console.log(book, '조회된 도서');
-      if (book) {
-        // 카테고리 업데이트
-        const updatedBook = await prisma.book.update({
-          where: { id: book.id },
-          data: { category },
-        });
-
-        books.push({
-          ...updatedBook,
-          isbn: updatedBook.isbn?.toString(),
-          summary: rec.reason,
-        });
-      }
-    }
-
-    return NextResponse.json({ books });
+    return NextResponse.json({ books: validBooks });
   } catch (error) {
     console.error('Book recommendation error:', error);
     return NextResponse.json(

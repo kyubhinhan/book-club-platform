@@ -86,7 +86,13 @@ export async function searchBookByTitleAndAuthor(
       );
     });
 
-    const bookInfo = exactMatch || data.items[0];
+    const bookInfo = exactMatch;
+    if (!bookInfo) {
+      return {
+        success: false,
+        error: '해당하는 도서를 찾을 수 없습니다.',
+      };
+    }
 
     // HTML 태그 제거 및 특수문자 처리
     const cleanTitle = bookInfo.title.replace(/<[^>]*>?/g, '');

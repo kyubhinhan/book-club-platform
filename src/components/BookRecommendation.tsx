@@ -10,6 +10,7 @@ import {
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid';
 import BookCard from './BookCard';
 import type { BookWithSummary } from './BookCard';
+import LoadingBookCard from './LoadingBookCard';
 
 const categories = [
   {
@@ -94,7 +95,7 @@ export default function BookRecommendation() {
               <div className="relative mt-1">
                 <ListboxButton
                   className={`
-                  relative w-full cursor-default rounded-lg bg-white py-2 pl-3 pr-10 
+                  relative w-full cursor-default rounded-lg bg-white py-2 pl-3 pr-10 cursor-pointer
                   text-left border border-gray-300 focus:outline-none 
                   focus-visible:border-blue-500 focus-visible:ring-2 
                   focus-visible:ring-white/75 focus-visible:ring-offset-2 
@@ -161,7 +162,7 @@ export default function BookRecommendation() {
             type="submit"
             disabled={loading}
             className={`
-              px-6 py-2 bg-blue-600 text-white rounded-lg 
+              px-6 py-2 bg-blue-600 text-white rounded-lg cursor-pointer
               hover:bg-blue-700 disabled:bg-blue-300
             `}
           >
@@ -176,7 +177,15 @@ export default function BookRecommendation() {
         </div>
       )}
 
-      {books.length > 0 && (
+      {loading && (
+        <div className="space-y-6">
+          {[...Array(5)].map((_, index) => (
+            <LoadingBookCard key={index} />
+          ))}
+        </div>
+      )}
+
+      {!loading && books.length > 0 && (
         <div className="space-y-6">
           {books.map((book) => (
             <BookCard key={book.id} book={book} />
