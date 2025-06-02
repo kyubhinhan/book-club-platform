@@ -37,10 +37,16 @@ async function findOrFetchBook(
   author: string,
   recommendationReason?: string
 ) {
+  // 저자명의 '^' 를 ',' 로 변환
+  const normalizedAuthor = author.replace(/\^/g, ', ');
+
   // 1. 데이터베이스에서 제목과 저자로 검색
   const existingBook = await prisma.book.findFirst({
     where: {
-      AND: [{ title: { contains: title } }, { author: { contains: author } }],
+      AND: [
+        { title: { contains: title } },
+        { author: { contains: normalizedAuthor } },
+      ],
     },
   });
 
@@ -61,7 +67,7 @@ async function findOrFetchBook(
   }
 
   // 2. 데이터베이스에 없으면 네이버 API로 검색
-  const bookInfo = await searchBookByTitleAndAuthor(title, author);
+  const bookInfo = await searchBookByTitleAndAuthor(title, normalizedAuthor);
 
   if (!bookInfo.success || !bookInfo.book) {
     return null;
@@ -71,7 +77,7 @@ async function findOrFetchBook(
   return await prisma.book.create({
     data: {
       title: bookInfo.book.title,
-      author: bookInfo.book.author,
+      author: bookInfo.book.author.replace(/\^/g, ', '), // 저자명의 '^' 를 ',' 로 변환
       description: bookInfo.book.description,
       isbn: bookInfo.book.isbn,
       category: '', // 카테고리는 나중에 설정
