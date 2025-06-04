@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { generateDiscussionQuestions } from '@/lib/openai';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: Request) {
   try {
@@ -32,17 +32,20 @@ export async function POST(request: Request) {
       questionCount
     );
 
-    // 발제문을 데이터베이스에 저장
-    const discussion = await prisma.discussion.create({
-      data: {
-        content: questionsText,
+    if (!questionsText) {
+      return NextResponse.json(
+        { error: '발제문 생성에 실패했습니다.' },
+        { status: 500 }
+      );
+    }
+
+    // 발제문 반환 (저장하지 않음)
+    return NextResponse.json({
+      discussion: {
         questions: parseQuestions(questionsText),
         bookId: book.id,
-        meetingId: '', // 이 필드는 나중에 미팅이 생성될 때 업데이트됩니다
       },
     });
-
-    return NextResponse.json({ discussion });
   } catch (error) {
     console.error('Discussion generation error:', error);
     return NextResponse.json(

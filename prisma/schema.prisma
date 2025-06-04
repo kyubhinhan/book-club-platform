@@ -88,7 +88,6 @@ model Book {
 
 model Discussion {
   id        String   @id @default(cuid())
-  content   String
   questions String[]
   meetingId String   @unique
   meeting   Meeting  @relation(fields: [meetingId], references: [id])

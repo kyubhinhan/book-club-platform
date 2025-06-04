@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export interface BookWithSummary {
   id: string;
@@ -11,6 +12,7 @@ export interface BookWithSummary {
 }
 
 export default function BookCard({ book }: { book: BookWithSummary }) {
+  const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
   const isLongDescription = book.description.length > 150;
   const displayDescription =
@@ -72,10 +74,8 @@ export default function BookCard({ book }: { book: BookWithSummary }) {
           </div>
 
           <button
-            onClick={() =>
-              (window.location.href = `/discussions/new?bookId=${book.id}`)
-            }
-            className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+            onClick={() => router.push(`/discussions/new?bookId=${book.id}`)}
+            className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2 cursor-pointer"
           >
             <span>✍️ 발제문 생성하기</span>
           </button>
