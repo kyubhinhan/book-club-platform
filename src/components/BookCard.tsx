@@ -14,36 +14,26 @@ export interface BookWithSummary {
 export default function BookCard({ book }: { book: BookWithSummary }) {
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
-  const maxLength = 150;
-  const isLongDescription = book.description
-    ? book.description.length > maxLength
-    : false;
+  const isLongDescription = book.description.length > 150;
   const displayDescription =
     isLongDescription && !isExpanded
-      ? `${book.description?.slice(0, maxLength)}...`
+      ? `${book.description.slice(0, 150)}...`
       : book.description;
 
   return (
-    <div className="flex bg-white p-6 rounded-xl shadow-sm border border-primary-100">
-      {/* 책 표지 이미지 */}
-      <div className="w-1/3 mr-6">
-        <div className="aspect-[3/4] bg-primary-50 rounded-lg overflow-hidden">
-          {book.imageUrl ? (
-            <Image
-              src={book.imageUrl}
-              alt={book.title}
-              width={300}
-              height={400}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-primary-300">
-              <span className="text-6xl">📚</span>
-            </div>
-          )}
-        </div>
+    <div className="flex gap-8 p-6 border rounded-xl hover:shadow-lg transition-shadow bg-white h-[500px] overflow-hidden">
+      {/* 책 이미지 */}
+      <div className="w-1/3 flex-shrink-0">
+        <Image
+          src={book.imageUrl || '/images/book-placeholder.svg'}
+          alt={`${book.title} 표지`}
+          width={240}
+          height={320}
+          className="w-full h-full object-cover rounded-lg shadow-md"
+        />
       </div>
 
+      {/* 책 정보 */}
       <div className="w-2/3 flex flex-col h-full overflow-hidden">
         {/* 제목과 저자 정보 */}
         <div className="mb-4 flex-shrink-0">
@@ -65,7 +55,7 @@ export default function BookCard({ book }: { book: BookWithSummary }) {
               {isLongDescription && (
                 <button
                   onClick={() => setIsExpanded(!isExpanded)}
-                  className="text-primary-600 hover:text-primary-800 mt-2 text-sm font-medium cursor-pointer hover:underline"
+                  className="text-blue-600 hover:text-blue-800 mt-2 text-sm font-medium cursor-pointer hover:underline"
                 >
                   {isExpanded ? '접기' : '펼치기'}
                 </button>
@@ -76,10 +66,8 @@ export default function BookCard({ book }: { book: BookWithSummary }) {
 
         {/* 고정된 하단 영역 */}
         <div className="mt-4 space-y-4 flex-shrink-0">
-          <div className="bg-primary-50 p-4 rounded-lg border border-primary-100">
-            <h3 className="font-semibold mb-2 text-primary-900">
-              📚 추천 이유
-            </h3>
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+            <h3 className="font-semibold mb-2 text-blue-900">📚 추천 이유</h3>
             <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
               {book.summary}
             </p>
@@ -87,7 +75,7 @@ export default function BookCard({ book }: { book: BookWithSummary }) {
 
           <button
             onClick={() => router.push(`/discussions/new?bookId=${book.id}`)}
-            className="w-full py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2 cursor-pointer"
           >
             <span>✍️ 발제문 생성하기</span>
           </button>

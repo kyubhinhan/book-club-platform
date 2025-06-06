@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 
 interface DateOption {
@@ -73,9 +74,7 @@ export default function MeetingCreation() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-8 text-primary-900">
-        모임 일정 만들기
-      </h1>
+      <h1 className="text-3xl font-bold mb-8">모임 일정 만들기</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
@@ -90,7 +89,7 @@ export default function MeetingCreation() {
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            className="w-full p-2 border rounded-lg"
             required
           />
         </div>
@@ -107,7 +106,7 @@ export default function MeetingCreation() {
             id="location"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            className="w-full p-2 border rounded-lg"
             required
           />
         </div>
@@ -120,7 +119,7 @@ export default function MeetingCreation() {
             <button
               type="button"
               onClick={addDateOption}
-              className="px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700"
+              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
             >
               + 일정 추가
             </button>
@@ -133,7 +132,7 @@ export default function MeetingCreation() {
                   type="datetime-local"
                   value={option.date}
                   onChange={(e) => updateDateOption(index, e.target.value)}
-                  className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="flex-1 p-2 border rounded-lg"
                   required
                 />
                 {dateOptions.length > 1 && (
@@ -151,13 +150,13 @@ export default function MeetingCreation() {
         </div>
 
         {error && (
-          <div className="p-4 bg-red-50 text-red-700 rounded-lg">{error}</div>
+          <div className="p-4 bg-red-100 text-red-700 rounded-lg">{error}</div>
         )}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-primary-300"
+          className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-300"
         >
           {loading ? '생성 중...' : '모임 만들기'}
         </button>
