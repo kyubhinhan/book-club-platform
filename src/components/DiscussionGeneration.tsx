@@ -1,6 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface Discussion {
   questions: string[];
@@ -15,6 +17,41 @@ export default function DiscussionGeneration() {
   const [loading, setLoading] = useState(false);
   const [discussion, setDiscussion] = useState<Discussion | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [newQuestion, setNewQuestion] = useState('');
+
+  // Computed property for add button state
+  const isAddButtonDisabled = !newQuestion.trim();
+  const addButtonClassName = `px-4 py-2 rounded-lg transition-colors ${
+    isAddButtonDisabled
+      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+      : 'bg-primary-600 text-white hover:bg-primary-700 cursor-pointer'
+  }`;
+
+  // Computed property for create meeting button state
+  const isCreateMeetingDisabled = !discussion?.questions.length;
+  const createMeetingButtonClassName = `w-full px-4 py-3 text-base font-semibold rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center ${
+    isCreateMeetingDisabled
+      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+      : 'bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 cursor-pointer'
+  }`;
+
+  const handleAddQuestion = useCallback(() => {
+    if (!newQuestion.trim() || !discussion) return;
+
+    setDiscussion({
+      ...discussion,
+      questions: [...discussion.questions, newQuestion.trim()],
+    });
+    setNewQuestion('');
+  }, [newQuestion, discussion]);
+
+  const debouncedAddQuestion = useDebounce(handleAddQuestion, 200);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      debouncedAddQuestion();
+    }
+  };
 
   useEffect(() => {
     if (!bookId) return;
@@ -73,6 +110,15 @@ export default function DiscussionGeneration() {
     }
   };
 
+  const handleDeleteQuestion = (index: number) => {
+    if (!discussion) return;
+
+    setDiscussion({
+      ...discussion,
+      questions: discussion.questions.filter((_, i) => i !== index),
+    });
+  };
+
   if (!bookId) {
     return (
       <div className="max-w-4xl mx-auto p-4">
@@ -107,16 +153,18 @@ export default function DiscussionGeneration() {
       </button>
 
       <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold text-indigo-700">AI 발제문 생성</h1>
-        <p className="text-sm text-gray-600">
+        <h1 className="text-3xl font-bold text-indigo-700 mb-2">
+          AI 발제문 생성
+        </h1>
+        <p className="text-base text-gray-600">
           AI가 선택하신 도서에 대한 발제 질문을 생성합니다.
         </p>
       </div>
 
       {loading && (
         <div className="p-3 mb-4 bg-primary-50 text-primary-700 rounded-lg">
-          <div className="flex items-center justify-center">
-            <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+          <div className="flex items-center justify-center text-base">
+            <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
               <circle
                 className="opacity-25"
                 cx="12"
@@ -146,22 +194,60 @@ export default function DiscussionGeneration() {
       {discussion && (
         <div className="space-y-4">
           <div className="p-4 bg-white border border-primary-100 rounded-xl shadow-sm">
-            <h2 className="text-lg font-bold text-primary-800 mb-3 flex items-center">
+            <h2 className="text-xl font-bold text-primary-800 mb-3 flex items-center">
               <span className="mr-2">💡</span>
               발제 질문
             </h2>
-            <ul className="space-y-2">
+
+            {/* 질문 추가 입력 필드 */}
+            <div className="mb-4 flex gap-2">
+              <input
+                type="text"
+                value={newQuestion}
+                onChange={(e) => setNewQuestion(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="새로운 발제 질문을 입력하세요"
+                className="flex-1 p-3 text-base border text-black border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+              <button
+                onClick={debouncedAddQuestion}
+                disabled={isAddButtonDisabled}
+                className={addButtonClassName + ' text-base'}
+              >
+                추가
+              </button>
+            </div>
+
+            <ul className="space-y-3">
               {discussion.questions.map((question, index) => (
                 <li
                   key={index}
-                  className="flex items-start p-3 bg-primary-50 rounded-lg"
+                  className="flex items-center p-4 bg-primary-50 rounded-lg group"
                 >
-                  <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-primary-600 text-white rounded-full mr-3 text-sm">
+                  <span className="flex-shrink-0 w-7 h-7 flex items-center justify-center bg-primary-600 text-white rounded-full mr-3 text-base">
                     {index + 1}
                   </span>
-                  <p className="text-gray-800 text-sm leading-relaxed">
+                  <p className="text-gray-800 text-base leading-relaxed flex-1">
                     {question}
                   </p>
+                  <button
+                    onClick={() => handleDeleteQuestion(index)}
+                    className="opacity-0 group-hover:opacity-100 ml-2 text-red-500 hover:text-red-700 transition-opacity cursor-pointer"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -169,7 +255,8 @@ export default function DiscussionGeneration() {
 
           <button
             onClick={handleCreateMeeting}
-            className="w-full px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-base font-semibold rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center"
+            disabled={isCreateMeetingDisabled}
+            className={createMeetingButtonClassName}
           >
             <span className="mr-2">📅</span>
             모임 일정 만들기
