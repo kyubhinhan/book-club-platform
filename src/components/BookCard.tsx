@@ -1,32 +1,51 @@
 import Image from 'next/image';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { BookRecommendationManager } from '@/utils/meeting';
 
 export interface BookWithSummary {
   id: string;
   title: string;
   author: string;
-  description: string;
-  summary: string;
-  imageUrl?: string;
+  description: string | null;
+  isbn: string | null;
+  category: string;
+  imageUrl: string | null;
+  publisher: string | null;
+  price: number | null;
+  pubDate: string | null;
+  recommendationReason: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export default function BookCard({ book }: { book: BookWithSummary }) {
+interface BookCardProps {
+  book: BookWithSummary;
+  currentBooks: BookWithSummary[]; // 현재 추천된 모든 책 목록
+}
+
+export default function BookCard({ book, currentBooks }: BookCardProps) {
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
-  const isLongDescription = book.description.length > 150;
+  const isLongDescription = (book.description?.length ?? 0) > 150;
   const displayDescription =
     isLongDescription && !isExpanded
-      ? `${book.description.slice(0, 150)}...`
+      ? `${book.description?.slice(0, 150)}...`
       : book.description;
+
+  const handleGenerateDiscussion = () => {
+    // 현재 추천 목록 저장 후 발제문 생성 페이지로 이동
+    BookRecommendationManager.saveState(currentBooks.map((book) => book.id));
+    router.push(`/discussions/new?bookId=${book.id}`);
+  };
 
   return (
     <div className="flex gap-8 p-6 border rounded-xl hover:shadow-lg transition-shadow bg-white h-[500px] overflow-hidden">
       {/* 책 이미지 */}
       <div className="w-1/3 flex-shrink-0">
         <Image
-          src={book.imageUrl || '/images/book-placeholder.svg'}
-          alt={`${book.title} 표지`}
+          src={book.imageUrl ?? '/images/default-book-cover.jpg'}
+          alt={book.title}
           width={240}
           height={320}
           className="w-full h-full object-cover rounded-lg shadow-md"
@@ -71,12 +90,12 @@ export default function BookCard({ book }: { book: BookWithSummary }) {
               📚 추천 이유
             </h3>
             <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-              {book.summary}
+              {book.recommendationReason}
             </p>
           </div>
 
           <button
-            onClick={() => router.push(`/discussions/new?bookId=${book.id}`)}
+            onClick={handleGenerateDiscussion}
             className="w-full py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium flex items-center justify-center gap-2 cursor-pointer"
           >
             <span>✍️ 발제문 생성하기</span>

@@ -1,59 +1,83 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import {
   Listbox,
   ListboxButton,
   ListboxOptions,
   ListboxOption,
+  Transition,
 } from '@headlessui/react';
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid';
-import BookCard from './BookCard';
+import { BookRecommendationManager } from '@/utils/meeting';
 import type { BookWithSummary } from './BookCard';
+import BookCard from './BookCard';
 import LoadingBookCard from './LoadingBookCard';
+import { useSearchParams } from 'next/navigation';
 
-const categories = [
-  {
-    id: 'literature',
-    name: '문학',
-    emoji: '📚',
-  },
-  {
-    id: 'philosophy',
-    name: '철학',
-    emoji: '🤔',
-  },
-  {
-    id: 'history',
-    name: '역사',
-    emoji: '📜',
-  },
-  {
-    id: 'science',
-    name: '과학',
-    emoji: '🔬',
-  },
-  {
-    id: 'self-development',
-    name: '자기계발',
-    emoji: '✨',
-  },
-  {
-    id: 'social-science',
-    name: '사회과학',
-    emoji: '🌏',
-  },
+interface Category {
+  id: string;
+  name: string;
+  emoji: string;
+}
+
+const categories: Category[] = [
+  { id: 'fiction', name: '소설', emoji: '📚' },
+  { id: 'non-fiction', name: '비소설', emoji: '📖' },
+  { id: 'self-help', name: '자기계발', emoji: '✨' },
+  { id: 'business', name: '경영/경제', emoji: '💼' },
 ];
 
 export default function BookRecommendation() {
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
-  const [books, setBooks] = useState<BookWithSummary[]>([]);
+  const [recommendedBooks, setRecommendedBooks] = useState<BookWithSummary[]>(
+    []
+  );
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState(categories[0]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  // 컴포넌트 마운트 시 이전 상태 복원
+  useEffect(() => {
+    const shouldRestoreState = searchParams.get('restoreState') === 'true';
 
+    // 상태 복원이 요청되었을 때만 이전 상태 복원
+    if (shouldRestoreState) {
+      const savedBookIds = BookRecommendationManager.getState();
+      if (savedBookIds.length > 0) {
+        fetchBooksByIds(savedBookIds);
+      }
+    }
+  }, [searchParams]);
+
+  const fetchBooksByIds = async (bookIds: string[]) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/books/getByIds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: bookIds }),
+      });
+
+      if (!response.ok) throw new Error('책 정보 조회에 실패했습니다.');
+
+      const data = await response.json();
+      setRecommendedBooks(data.books);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGetRecommendations = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
     setLoading(true);
     setError(null);
 
@@ -65,19 +89,19 @@ export default function BookRecommendation() {
           category: selectedCategory.id,
           count: 5,
         }),
-      } as RequestInit);
+      });
 
-      if (!response.ok) {
-        throw new Error('도서 추천을 가져오는데 실패했습니다.');
-      }
+      if (!response.ok) throw new Error('책 추천에 실패했습니다.');
 
       const data = await response.json();
-      setBooks(data.books);
-    } catch (error: unknown) {
+      const books: BookWithSummary[] = data.books;
+      setRecommendedBooks(books);
+
+      // 추천 결과 저장
+      BookRecommendationManager.saveState(books.map((book) => book.id));
+    } catch (err) {
       setError(
-        error instanceof Error
-          ? error.message
-          : '알 수 없는 오류가 발생했습니다.'
+        err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
       );
     } finally {
       setLoading(false);
@@ -88,20 +112,12 @@ export default function BookRecommendation() {
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-3xl font-bold mb-8 text-gray-900">AI 도서 추천</h1>
 
-      <form onSubmit={handleSubmit} className="mb-8">
+      <form onSubmit={handleGetRecommendations} className="mb-8">
         <div className="flex gap-4">
           <div className="flex-1">
             <Listbox value={selectedCategory} onChange={setSelectedCategory}>
-              <div className="relative mt-1">
-                <ListboxButton
-                  className={`
-                  relative w-full cursor-default rounded-lg bg-white py-2 pl-3 pr-10 cursor-pointer
-                  text-left border border-gray-300 focus:outline-none 
-                  focus-visible:border-primary-500 focus-visible:ring-2 
-                  focus-visible:ring-white/75 focus-visible:ring-offset-2 
-                  focus-visible:ring-offset-primary-300
-                `}
-                >
+              <div className="relative">
+                <ListboxButton className="relative w-full cursor-pointer rounded-lg bg-white py-3 pl-4 pr-10 text-left border focus:outline-none focus-visible:border-primary-500 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 focus-visible:ring-offset-2 focus-visible:ring-offset-primary-300">
                   <span className="block truncate text-gray-900">
                     <span className="mr-2">{selectedCategory.emoji}</span>
                     {selectedCategory.name}
@@ -113,60 +129,56 @@ export default function BookRecommendation() {
                     />
                   </span>
                 </ListboxButton>
-                <ListboxOptions
-                  className={`
-                  absolute mt-1 max-h-60 w-full overflow-auto rounded-md 
-                  bg-white py-1 text-base shadow-lg ring-1 ring-black/5 
-                  focus:outline-none z-10
-                `}
+                <Transition
+                  as={Fragment}
+                  leave="transition ease-in duration-100"
+                  leaveFrom="opacity-100"
+                  leaveTo="opacity-0"
                 >
-                  {categories.map((category) => (
-                    <ListboxOption
-                      key={category.id}
-                      className={({ active }) => `
-                        relative cursor-default select-none py-2 pl-10 pr-4
-                        ${
-                          active
-                            ? 'bg-primary-100 text-primary-900'
-                            : 'text-gray-900'
+                  <ListboxOptions className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                    {categories.map((category) => (
+                      <ListboxOption
+                        key={category.id}
+                        className={({ active }) =>
+                          `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                            active
+                              ? 'bg-primary-100 text-primary-900'
+                              : 'text-gray-900'
+                          }`
                         }
-                      `}
-                      value={category}
-                    >
-                      {({ selected }) => (
-                        <>
-                          <span
-                            className={`
-                            block truncate 
-                            ${selected ? 'font-medium' : 'font-normal'}
-                          `}
-                          >
-                            <span className="mr-2">{category.emoji}</span>
-                            {category.name}
-                          </span>
-                          {selected ? (
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-primary-600">
-                              <CheckIcon
-                                className="h-5 w-5"
-                                aria-hidden="true"
-                              />
+                        value={category}
+                      >
+                        {({ selected }) => (
+                          <>
+                            <span
+                              className={`block truncate ${
+                                selected ? 'font-medium' : 'font-normal'
+                              }`}
+                            >
+                              <span className="mr-2">{category.emoji}</span>
+                              {category.name}
                             </span>
-                          ) : null}
-                        </>
-                      )}
-                    </ListboxOption>
-                  ))}
-                </ListboxOptions>
+                            {selected ? (
+                              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-primary-600">
+                                <CheckIcon
+                                  className="h-5 w-5"
+                                  aria-hidden="true"
+                                />
+                              </span>
+                            ) : null}
+                          </>
+                        )}
+                      </ListboxOption>
+                    ))}
+                  </ListboxOptions>
+                </Transition>
               </div>
             </Listbox>
           </div>
           <button
             type="submit"
             disabled={loading}
-            className={`
-              px-6 py-2 bg-primary-600 text-white rounded-lg cursor-pointer
-              hover:bg-primary-700 disabled:bg-primary-300
-            `}
+            className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-300"
           >
             {loading ? '추천 중...' : '추천 받기'}
           </button>
@@ -174,23 +186,27 @@ export default function BookRecommendation() {
       </form>
 
       {error && (
-        <div className="p-4 mb-6 bg-red-100 text-red-700 rounded-lg">
+        <div className="p-4 mb-6 bg-red-50 text-red-700 rounded-lg">
           {error}
         </div>
       )}
 
       {loading && (
         <div className="space-y-6">
-          {[...Array(5)].map((_, index) => (
-            <LoadingBookCard key={index} />
+          {[...Array(3)].map((_, i) => (
+            <LoadingBookCard key={i} />
           ))}
         </div>
       )}
 
-      {!loading && books.length > 0 && (
+      {!loading && recommendedBooks.length > 0 && (
         <div className="space-y-6">
-          {books.map((book) => (
-            <BookCard key={book.id} book={book} />
+          {recommendedBooks.map((book) => (
+            <BookCard
+              key={book.id}
+              book={book}
+              currentBooks={recommendedBooks}
+            />
           ))}
         </div>
       )}
