@@ -87,7 +87,7 @@ export default function DiscussionGeneration() {
     <div className="max-w-4xl mx-auto p-4">
       <button
         onClick={() => router.back()}
-        className="mb-4 flex items-center text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
+        className="mb-4 flex items-center text-primary-600 hover:text-primary-900 transition-colors cursor-pointer"
       >
         <svg
           className="w-5 h-5 mr-1"
@@ -107,14 +107,14 @@ export default function DiscussionGeneration() {
       </button>
 
       <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold text-indigo-700">AI 발제문 생성</h1>
+        <h1 className="text-2xl font-bold text-primary-700">AI 발제문 생성</h1>
         <p className="text-sm text-gray-600">
           AI가 선택하신 도서에 대한 발제 질문을 생성합니다.
         </p>
       </div>
 
       {loading && (
-        <div className="p-3 mb-4 bg-blue-50 text-blue-700 rounded-lg">
+        <div className="p-3 mb-4 bg-primary-50 text-primary-700 rounded-lg">
           <div className="flex items-center justify-center">
             <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
               <circle
@@ -145,8 +145,8 @@ export default function DiscussionGeneration() {
 
       {discussion && (
         <div className="space-y-4">
-          <div className="p-4 bg-white border border-indigo-100 rounded-xl shadow-sm">
-            <h2 className="text-lg font-bold text-indigo-800 mb-3 flex items-center">
+          <div className="p-4 bg-white border border-primary-200 rounded-xl shadow-sm">
+            <h2 className="text-lg font-bold text-primary-800 mb-3 flex items-center">
               <span className="mr-2">💡</span>
               발제 질문
             </h2>
@@ -154,9 +154,9 @@ export default function DiscussionGeneration() {
               {discussion.questions.map((question, index) => (
                 <li
                   key={index}
-                  className="flex items-start p-3 bg-indigo-50 rounded-lg"
+                  className="flex items-start p-3 bg-primary-50 rounded-lg"
                 >
-                  <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-indigo-600 text-white rounded-full mr-3 text-sm">
+                  <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-primary-600 text-white rounded-full mr-3 text-sm">
                     {index + 1}
                   </span>
                   <p className="text-gray-800 text-sm leading-relaxed">
@@ -169,7 +169,7 @@ export default function DiscussionGeneration() {
 
           <button
             onClick={handleCreateMeeting}
-            className="w-full px-4 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-base font-semibold rounded-lg hover:from-indigo-700 hover:to-indigo-800 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center"
+            className="w-full px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-base font-semibold rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center"
           >
             <span className="mr-2">📅</span>
             모임 일정 만들기
