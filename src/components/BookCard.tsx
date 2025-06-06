@@ -55,7 +55,7 @@ export default function BookCard({ book }: { book: BookWithSummary }) {
               {isLongDescription && (
                 <button
                   onClick={() => setIsExpanded(!isExpanded)}
-                  className="text-blue-600 hover:text-blue-800 mt-2 text-sm font-medium cursor-pointer hover:underline"
+                  className="text-primary-600 hover:text-primary-800 mt-2 text-sm font-medium cursor-pointer hover:underline"
                 >
                   {isExpanded ? '접기' : '펼치기'}
                 </button>
@@ -66,8 +66,10 @@ export default function BookCard({ book }: { book: BookWithSummary }) {
 
         {/* 고정된 하단 영역 */}
         <div className="mt-4 space-y-4 flex-shrink-0">
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-            <h3 className="font-semibold mb-2 text-blue-900">📚 추천 이유</h3>
+          <div className="bg-primary-50 p-4 rounded-lg border border-primary-100">
+            <h3 className="font-semibold mb-2 text-primary-900">
+              📚 추천 이유
+            </h3>
             <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
               {book.summary}
             </p>
@@ -75,7 +77,7 @@ export default function BookCard({ book }: { book: BookWithSummary }) {
 
           <button
             onClick={() => router.push(`/discussions/new?bookId=${book.id}`)}
-            className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium flex items-center justify-center gap-2 cursor-pointer"
           >
             <span>✍️ 발제문 생성하기</span>
           </button>

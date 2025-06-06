@@ -97,9 +97,9 @@ export default function BookRecommendation() {
                   className={`
                   relative w-full cursor-default rounded-lg bg-white py-2 pl-3 pr-10 cursor-pointer
                   text-left border border-gray-300 focus:outline-none 
-                  focus-visible:border-blue-500 focus-visible:ring-2 
+                  focus-visible:border-primary-500 focus-visible:ring-2 
                   focus-visible:ring-white/75 focus-visible:ring-offset-2 
-                  focus-visible:ring-offset-blue-300
+                  focus-visible:ring-offset-primary-300
                 `}
                 >
                   <span className="block truncate text-gray-900">
@@ -126,7 +126,9 @@ export default function BookRecommendation() {
                       className={({ active }) => `
                         relative cursor-default select-none py-2 pl-10 pr-4
                         ${
-                          active ? 'bg-blue-100 text-blue-900' : 'text-gray-900'
+                          active
+                            ? 'bg-primary-100 text-primary-900'
+                            : 'text-gray-900'
                         }
                       `}
                       value={category}
@@ -143,7 +145,7 @@ export default function BookRecommendation() {
                             {category.name}
                           </span>
                           {selected ? (
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
+                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-primary-600">
                               <CheckIcon
                                 className="h-5 w-5"
                                 aria-hidden="true"
@@ -162,8 +164,8 @@ export default function BookRecommendation() {
             type="submit"
             disabled={loading}
             className={`
-              px-6 py-2 bg-blue-600 text-white rounded-lg cursor-pointer
-              hover:bg-blue-700 disabled:bg-blue-300
+              px-6 py-2 bg-primary-600 text-white rounded-lg cursor-pointer
+              hover:bg-primary-700 disabled:bg-primary-300
             `}
           >
             {loading ? '추천 중...' : '추천 받기'}

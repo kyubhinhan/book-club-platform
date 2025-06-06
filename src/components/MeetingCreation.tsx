@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 
 interface DateOption {
@@ -119,7 +118,7 @@ export default function MeetingCreation() {
             <button
               type="button"
               onClick={addDateOption}
-              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="px-3 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700"
             >
               + 일정 추가
             </button>
@@ -156,7 +155,7 @@ export default function MeetingCreation() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-300"
+          className="w-full px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-primary-300"
         >
           {loading ? '생성 중...' : '모임 만들기'}
         </button>

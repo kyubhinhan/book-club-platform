@@ -123,7 +123,7 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
               <button
                 onClick={() => handleVote(vote.id)}
                 disabled={votingLoading === vote.id}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-300"
+                className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 disabled:bg-primary-300"
               >
                 {votingLoading === vote.id ? '투표 중...' : '투표하기'}
               </button>
@@ -135,7 +135,7 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
       <div className="flex justify-end">
         <button
           onClick={() => (window.location.href = '/meetings')}
-          className="px-4 py-2 text-gray-600 hover:text-gray-900"
+          className="px-4 py-2 text-gray-600 hover:text-primary-900"
         >
           목록으로 돌아가기
         </button>
