@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce';
+import { MeetingStorageKeys } from '@/utils/meeting';
 
 interface Discussion {
   questions: string[];
@@ -96,13 +97,17 @@ export default function DiscussionGeneration() {
     if (!discussion) return;
 
     try {
-      router.push(
-        `/meetings/new?bookId=${discussion.bookId}&discussion=${encodeURIComponent(
-          JSON.stringify({
-            questions: discussion.questions,
-          })
-        )}`
+      // Store discussion data in sessionStorage with book-specific key
+      sessionStorage.setItem(
+        MeetingStorageKeys.discussion(discussion.bookId),
+        JSON.stringify({
+          questions: discussion.questions,
+          bookId: discussion.bookId,
+        })
       );
+
+      // Navigate with only bookId in URL
+      router.push(`/meetings/new?bookId=${discussion.bookId}`);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
