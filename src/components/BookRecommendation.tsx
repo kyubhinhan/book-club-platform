@@ -9,16 +9,21 @@ import {
   Transition,
 } from '@headlessui/react';
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid';
-import { BookRecommendationManager } from '@/utils/meeting';
+import { BookRecommendationManager } from '@/utils/book';
 import type { BookWithSummary } from './BookCard';
 import BookCard from './BookCard';
 import LoadingBookCard from './LoadingBookCard';
 import { useSearchParams } from 'next/navigation';
+import { useForm } from 'react-hook-form';
 
 interface Category {
   id: string;
   name: string;
   emoji: string;
+}
+
+interface RecommendationFormData {
+  category: Category;
 }
 
 const categories: Category[] = [
@@ -35,7 +40,14 @@ export default function BookRecommendation() {
     []
   );
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState(categories[0]);
+
+  const { handleSubmit, setValue, watch } = useForm<RecommendationFormData>({
+    defaultValues: {
+      category: categories[0],
+    },
+  });
+
+  const selectedCategory = watch('category');
 
   // 컴포넌트 마운트 시 이전 상태 복원
   useEffect(() => {
@@ -74,10 +86,7 @@ export default function BookRecommendation() {
     }
   };
 
-  const handleGetRecommendations = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
-    e.preventDefault();
+  const onSubmit = async () => {
     setLoading(true);
     setError(null);
 
@@ -112,10 +121,13 @@ export default function BookRecommendation() {
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-3xl font-bold mb-8 text-gray-900">AI 도서 추천</h1>
 
-      <form onSubmit={handleGetRecommendations} className="mb-8">
+      <form onSubmit={handleSubmit(onSubmit)} className="mb-8">
         <div className="flex gap-4">
           <div className="flex-1">
-            <Listbox value={selectedCategory} onChange={setSelectedCategory}>
+            <Listbox
+              value={selectedCategory}
+              onChange={(category) => setValue('category', category)}
+            >
               <div className="relative">
                 <ListboxButton className="relative w-full cursor-pointer rounded-lg bg-white py-3 pl-4 pr-10 text-left border focus:outline-none focus-visible:border-primary-500 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 focus-visible:ring-offset-2 focus-visible:ring-offset-primary-300">
                   <span className="block truncate text-gray-900">
@@ -178,7 +190,7 @@ export default function BookRecommendation() {
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-300"
+            className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-300 cursor-pointer"
           >
             {loading ? '추천 중...' : '추천 받기'}
           </button>

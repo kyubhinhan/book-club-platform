@@ -19,12 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="dark">
-      <body
-        className={`${notoSansKr.variable} antialiased bg-gray-900 text-gray-100`}
-      >
-        {children}
-      </body>
+    <html lang="ko">
+      <body className={`${notoSansKr.variable}`}>{children}</body>
     </html>
   );
 }

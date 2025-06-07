@@ -26,7 +26,7 @@ interface BookSearchResult {
     title: string;
     author: string;
     description: string;
-    isbn: bigint;
+    isbn: string;
     imageUrl: string;
     publisher: string;
     price: number;
@@ -109,7 +109,7 @@ export async function searchBookByTitleAndAuthor(
         title: cleanTitle,
         author: cleanAuthor,
         description: cleanDescription,
-        isbn: BigInt(bookInfo.isbn.replace(/[^0-9]/g, '')),
+        isbn: bookInfo.isbn.replace(/[^0-9]/g, ''),
         imageUrl: bookInfo.image,
         publisher: bookInfo.publisher,
         price,

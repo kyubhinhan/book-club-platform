@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useDebounce } from '@/hooks/useDebounce';
-import { MeetingStorageKeys } from '@/utils/meeting';
+import { useForm } from 'react-hook-form';
 
 interface Discussion {
   questions: string[];
   bookId: string;
+}
+
+interface QuestionFormData {
+  question: string;
 }
 
 export default function DiscussionGeneration() {
@@ -18,15 +21,17 @@ export default function DiscussionGeneration() {
   const [loading, setLoading] = useState(false);
   const [discussion, setDiscussion] = useState<Discussion | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [newQuestion, setNewQuestion] = useState('');
 
-  // Computed property for add button state
-  const isAddButtonDisabled = !newQuestion.trim();
-  const addButtonClassName = `px-4 py-2 rounded-lg transition-colors ${
-    isAddButtonDisabled
-      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-      : 'bg-primary-600 text-white hover:bg-primary-700 cursor-pointer'
-  }`;
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { isValid },
+  } = useForm<QuestionFormData>({
+    defaultValues: {
+      question: '',
+    },
+  });
 
   // Computed property for create meeting button state
   const isCreateMeetingDisabled = !discussion?.questions.length;
@@ -36,22 +41,14 @@ export default function DiscussionGeneration() {
       : 'bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 cursor-pointer'
   }`;
 
-  const handleAddQuestion = useCallback(() => {
-    if (!newQuestion.trim() || !discussion) return;
+  const onSubmit = (data: QuestionFormData) => {
+    if (!discussion) return;
 
     setDiscussion({
       ...discussion,
-      questions: [...discussion.questions, newQuestion.trim()],
+      questions: [...discussion.questions, data.question.trim()],
     });
-    setNewQuestion('');
-  }, [newQuestion, discussion]);
-
-  const debouncedAddQuestion = useDebounce(handleAddQuestion, 200);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      debouncedAddQuestion();
-    }
+    reset();
   };
 
   useEffect(() => {
@@ -97,17 +94,26 @@ export default function DiscussionGeneration() {
     if (!discussion) return;
 
     try {
-      // Store discussion data in sessionStorage with book-specific key
-      sessionStorage.setItem(
-        MeetingStorageKeys.discussion(discussion.bookId),
-        JSON.stringify({
+      // Create discussion in the database
+      const response = await fetch('/api/discussions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           questions: discussion.questions,
           bookId: discussion.bookId,
-        })
-      );
+        }),
+      });
 
-      // Navigate with only bookId in URL
-      router.push(`/meetings/new?bookId=${discussion.bookId}`);
+      if (!response.ok) {
+        throw new Error('Failed to create discussion');
+      }
+
+      const createdDiscussion = await response.json();
+
+      // Navigate with only discussionId in URL
+      router.push(`/meetings/new?discussionId=${createdDiscussion.id}`);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
@@ -207,23 +213,28 @@ export default function DiscussionGeneration() {
             </h2>
 
             {/* 질문 추가 입력 필드 */}
-            <div className="mb-4 flex gap-2">
+            <form onSubmit={handleSubmit(onSubmit)} className="mb-4 flex gap-2">
               <input
                 type="text"
-                value={newQuestion}
-                onChange={(e) => setNewQuestion(e.target.value)}
-                onKeyDown={handleKeyDown}
+                {...register('question', {
+                  required: true,
+                  minLength: 5,
+                })}
                 placeholder="새로운 발제 질문을 입력하세요"
                 className="flex-1 p-3 text-base border text-black border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
               <button
-                onClick={debouncedAddQuestion}
-                disabled={isAddButtonDisabled}
-                className={addButtonClassName + ' text-base'}
+                type="submit"
+                disabled={!isValid}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  !isValid
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-primary-600 text-white hover:bg-primary-700 cursor-pointer'
+                } text-base`}
               >
                 추가
               </button>
-            </div>
+            </form>
 
             <ul className="space-y-3">
               {discussion.questions.map((question, index) => (

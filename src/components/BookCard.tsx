@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookRecommendationManager } from '@/utils/meeting';
+import { BookRecommendationManager } from '@/utils/book';
 
 export interface BookWithSummary {
   id: string;

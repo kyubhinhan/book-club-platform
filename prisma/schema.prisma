@@ -43,19 +43,26 @@ model BookClub {
 }
 
 model Meeting {
-  id           String            @id @default(cuid())
-  title        String
-  date         DateTime
-  location     String?
-  bookId       String
-  book         Book              @relation(fields: [bookId], references: [id])
-  clubId       String
-  club         BookClub          @relation(fields: [clubId], references: [id])
-  participants User[]            @relation("MeetingParticipants")
-  discussion   Discussion?
-  dateVotes    MeetingDateVote[]
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  id              String            @id @default(cuid())
+  title           String
+  description     String?
+  startDate       DateTime
+  endDate         DateTime
+  maxParticipants Int
+  meetingType     String           // 'online' or 'offline'
+  location        String?
+  meetingDay      String           // 'monday', 'tuesday', etc.
+  meetingTime     String           // HH:mm format
+  meetingFrequency String          // 'weekly', 'biweekly', 'monthly'
+  bookId          String
+  book            Book             @relation(fields: [bookId], references: [id])
+  clubId          String
+  club            BookClub         @relation(fields: [clubId], references: [id])
+  participants    User[]           @relation("MeetingParticipants")
+  discussion      Discussion?
+  dateVotes       MeetingDateVote[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 }
 
 model MeetingDateVote {
@@ -73,7 +80,7 @@ model Book {
   title       String
   author      String
   description String?
-  isbn        BigInt?     @unique  // ISBN을 BigInt로 저장 (13자리 숫자를 안전하게 저장하기 위해)
+  isbn        String?     @unique  // ISBN을 String으로 저장
   category    String
   imageUrl    String?      // 도서 표지 이미지 URL
   publisher   String?      // 출판사
@@ -89,8 +96,8 @@ model Book {
 model Discussion {
   id        String   @id @default(cuid())
   questions String[]
-  meetingId String   @unique
-  meeting   Meeting  @relation(fields: [meetingId], references: [id])
+  meetingId String?  @unique
+  meeting   Meeting? @relation(fields: [meetingId], references: [id])
   bookId    String
   book      Book     @relation(fields: [bookId], references: [id])
   createdAt DateTime @default(now())
