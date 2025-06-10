@@ -1,14 +1,17 @@
 'use client';
 
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Listbox,
-  ListboxButton,
-  ListboxOptions,
-  ListboxOption,
-  Transition,
-} from '@headlessui/react';
-import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid';
+  FormControl,
+  Select,
+  MenuItem,
+  Button,
+  Typography,
+  Box,
+  Container,
+  Alert,
+  SelectChangeEvent,
+} from '@mui/material';
 import { BookRecommendationManager } from '@/utils/book';
 import type { BookWithSummary } from './BookCard';
 import BookCard from './BookCard';
@@ -49,11 +52,9 @@ export default function BookRecommendation() {
 
   const selectedCategory = watch('category');
 
-  // 컴포넌트 마운트 시 이전 상태 복원
   useEffect(() => {
     const shouldRestoreState = searchParams.get('restoreState') === 'true';
 
-    // 상태 복원이 요청되었을 때만 이전 상태 복원
     if (shouldRestoreState) {
       const savedBookIds = BookRecommendationManager.getState();
       if (savedBookIds.length > 0) {
@@ -106,7 +107,6 @@ export default function BookRecommendation() {
       const books: BookWithSummary[] = data.books;
       setRecommendedBooks(books);
 
-      // 추천 결과 저장
       BookRecommendationManager.saveState(books.map((book) => book.id));
     } catch (err) {
       setError(
@@ -117,102 +117,82 @@ export default function BookRecommendation() {
     }
   };
 
-  return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-8 text-gray-900">AI 도서 추천</h1>
+  const handleCategoryChange = (event: SelectChangeEvent<string>) => {
+    const selectedId = event.target.value;
+    const category = categories.find((cat) => cat.id === selectedId);
+    if (category) {
+      setValue('category', category);
+    }
+  };
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mb-8">
-        <div className="flex gap-4">
-          <div className="flex-1">
-            <Listbox
-              value={selectedCategory}
-              onChange={(category) => setValue('category', category)}
+  return (
+    <Container maxWidth="md" sx={{ py: 4 }}>
+      <Typography
+        variant="h4"
+        component="h1"
+        sx={{ mb: 4, fontSize: { xs: '1.75rem', sm: '2rem' } }}
+      >
+        AI 도서 추천
+      </Typography>
+
+      <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <FormControl sx={{ flexGrow: 1 }}>
+            <Select
+              value={selectedCategory.id}
+              onChange={handleCategoryChange}
+              size="small"
+              sx={{
+                '& .MuiSelect-select': {
+                  display: 'flex',
+                  alignItems: 'center',
+                  py: 1.5,
+                },
+              }}
             >
-              <div className="relative">
-                <ListboxButton className="relative w-full cursor-pointer rounded-lg bg-white py-3 pl-4 pr-10 text-left border focus:outline-none focus-visible:border-primary-500 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 focus-visible:ring-offset-2 focus-visible:ring-offset-primary-300">
-                  <span className="block truncate text-gray-900">
-                    <span className="mr-2">{selectedCategory.emoji}</span>
-                    {selectedCategory.name}
-                  </span>
-                  <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                    <ChevronUpDownIcon
-                      className="h-5 w-5 text-gray-400"
-                      aria-hidden="true"
-                    />
-                  </span>
-                </ListboxButton>
-                <Transition
-                  as={Fragment}
-                  leave="transition ease-in duration-100"
-                  leaveFrom="opacity-100"
-                  leaveTo="opacity-0"
+              {categories.map((category) => (
+                <MenuItem
+                  key={category.id}
+                  value={category.id}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
                 >
-                  <ListboxOptions className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                    {categories.map((category) => (
-                      <ListboxOption
-                        key={category.id}
-                        className={({ active }) =>
-                          `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
-                            active
-                              ? 'bg-primary-100 text-primary-900'
-                              : 'text-gray-900'
-                          }`
-                        }
-                        value={category}
-                      >
-                        {({ selected }) => (
-                          <>
-                            <span
-                              className={`block truncate ${
-                                selected ? 'font-medium' : 'font-normal'
-                              }`}
-                            >
-                              <span className="mr-2">{category.emoji}</span>
-                              {category.name}
-                            </span>
-                            {selected ? (
-                              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-primary-600">
-                                <CheckIcon
-                                  className="h-5 w-5"
-                                  aria-hidden="true"
-                                />
-                              </span>
-                            ) : null}
-                          </>
-                        )}
-                      </ListboxOption>
-                    ))}
-                  </ListboxOptions>
-                </Transition>
-              </div>
-            </Listbox>
-          </div>
-          <button
+                  <span style={{ marginRight: '8px' }}>{category.emoji}</span>
+                  {category.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Button
             type="submit"
+            variant="contained"
             disabled={loading}
-            className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-300 cursor-pointer"
+            size="small"
+            sx={{ px: 3 }}
           >
             {loading ? '추천 중...' : '추천 받기'}
-          </button>
-        </div>
-      </form>
+          </Button>
+        </Box>
+      </Box>
 
       {error && (
-        <div className="p-4 mb-6 bg-red-50 text-red-700 rounded-lg">
+        <Alert severity="error" sx={{ mb: 2 }}>
           {error}
-        </div>
+        </Alert>
       )}
 
       {loading && (
-        <div className="space-y-6">
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {[...Array(3)].map((_, i) => (
             <LoadingBookCard key={i} />
           ))}
-        </div>
+        </Box>
       )}
 
       {!loading && recommendedBooks.length > 0 && (
-        <div className="space-y-6">
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {recommendedBooks.map((book) => (
             <BookCard
               key={book.id}
@@ -220,8 +200,8 @@ export default function BookRecommendation() {
               currentBooks={recommendedBooks}
             />
           ))}
-        </div>
+        </Box>
       )}
-    </div>
+    </Container>
   );
 }

@@ -4,6 +4,21 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import Image from 'next/image';
 import { Book } from '@prisma/client';
+import {
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Button,
+  Box,
+  Typography,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Paper,
+} from '@mui/material';
+import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 
 interface MeetingCreationProps {
   book: Book;
@@ -34,6 +49,7 @@ export default function MeetingCreation({
     register,
     handleSubmit,
     formState: { errors },
+    watch,
   } = useForm<MeetingFormData>();
 
   const onSubmit = async (data: MeetingFormData) => {
@@ -46,7 +62,7 @@ export default function MeetingCreation({
         body: JSON.stringify({
           ...data,
           bookId: book.id,
-          discussionId: discussionId,
+          discussionId,
         }),
       });
 
@@ -62,191 +78,210 @@ export default function MeetingCreation({
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* 왼쪽: 책 정보와 발제문 */}
-        <div className="space-y-6">
-          {/* 책 정보 카드 */}
-          <div className="bg-white p-6 rounded-xl border shadow-sm">
-            <div className="relative w-full h-[300px] mb-4">
+    <Box sx={{ maxWidth: '3xl', mx: 'auto', p: 4, '& > *': { mb: 6 } }}>
+      {/* 책 정보 섹션 */}
+      <Accordion>
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls="book-info-content"
+          id="book-info-header"
+        >
+          <Typography variant="h6">책 정보</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Box sx={{ display: 'flex', gap: 4, alignItems: 'flex-start' }}>
+            <Box
+              sx={{
+                flexShrink: 0,
+                width: 200,
+                height: 300,
+                position: 'relative',
+              }}
+            >
               <Image
                 src={book.imageUrl || '/default-book-cover.jpg'}
                 alt={book.title}
                 fill
-                className="object-contain rounded-lg"
+                style={{ objectFit: 'cover' }}
               />
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900">
-              {book.title}
-            </h2>
-            <p className="text-gray-600 mt-2">{book.author}</p>
-            <p className="text-gray-700 mt-4 text-sm leading-relaxed">
-              {book.description}
-            </p>
-          </div>
+            </Box>
+            <Box>
+              <Typography variant="h5" gutterBottom>
+                {book.title}
+              </Typography>
+              <Typography variant="body1" color="text.secondary" gutterBottom>
+                저자: {book.author}
+              </Typography>
+              <Typography variant="body2">{book.description}</Typography>
+            </Box>
+          </Box>
+        </AccordionDetails>
+      </Accordion>
 
-          {/* 발제문 섹션 */}
-          <div className="bg-white p-6 rounded-xl border shadow-sm">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-              <span className="mr-2">💡</span>
-              발제문
-            </h2>
-            <div className="space-y-3">
-              {discussionQuestions.map((question, index) => (
-                <div
-                  key={index}
-                  className="p-4 bg-primary-50 rounded-lg text-gray-800 text-base leading-relaxed"
-                >
-                  <span className="inline-flex items-center justify-center bg-primary-600 text-white rounded-full w-6 h-6 text-sm mr-3">
-                    {index + 1}
-                  </span>
-                  {question}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+      {/* 토론 질문 섹션 */}
+      <Accordion>
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls="questions-content"
+          id="questions-header"
+        >
+          <Typography variant="h6">토론 질문</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Box component="ul" sx={{ pl: 2 }}>
+            {discussionQuestions.map((question, index) => (
+              <Typography component="li" key={index} sx={{ mb: 2 }}>
+                {question}
+              </Typography>
+            ))}
+          </Box>
+        </AccordionDetails>
+      </Accordion>
 
-        {/* 오른쪽: 모임 생성 폼 */}
-        <div className="bg-white p-6 rounded-xl border shadow-sm">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">모임 만들기</h2>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                모임 제목
-              </label>
-              <input
-                type="text"
-                {...register('title', { required: '모임 제목은 필수입니다' })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder="모임의 제목을 입력해주세요"
-              />
-              {errors.title && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.title.message}
-                </p>
-              )}
-            </div>
+      {/* 모임 생성 폼 */}
+      <Paper sx={{ p: 6 }}>
+        <Typography variant="h5" gutterBottom>
+          모임 만들기
+        </Typography>
+        <Box
+          component="form"
+          onSubmit={handleSubmit(onSubmit)}
+          sx={{ '& > *': { mb: 3 } }}
+        >
+          <TextField
+            fullWidth
+            label="모임 제목"
+            {...register('title', { required: '모임 제목은 필수입니다' })}
+            error={!!errors.title}
+            helperText={errors.title?.message}
+            placeholder="모임의 제목을 입력해주세요"
+          />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                모임 소개
-              </label>
-              <textarea
-                {...register('description', { required: true })}
-                rows={5}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder="모임에 대해 소개해주세요"
-              />
-            </div>
+          <TextField
+            fullWidth
+            label="모임 소개"
+            multiline
+            rows={5}
+            {...register('description', { required: true })}
+            error={!!errors.description}
+            placeholder="모임에 대해 소개해주세요"
+          />
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  시작일
-                </label>
-                <input
-                  type="date"
-                  {...register('startDate', { required: true })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+            <TextField
+              fullWidth
+              label="시작일"
+              type="date"
+              {...register('startDate', { required: true })}
+              error={!!errors.startDate}
+              InputLabelProps={{ shrink: true }}
+            />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  종료일
-                </label>
-                <input
-                  type="date"
-                  {...register('endDate', { required: true })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-            </div>
+            <TextField
+              fullWidth
+              label="종료일"
+              type="date"
+              name={register('endDate', { required: true }).name}
+              onChange={register('endDate', { required: true }).onChange}
+              onBlur={register('endDate', { required: true }).onBlur}
+              inputRef={register('endDate', { required: true }).ref}
+              error={!!errors.endDate}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Box>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                모임 정원
-              </label>
-              <input
-                type="number"
-                {...register('maxParticipants', {
-                  required: true,
-                  min: 2,
-                  max: 20,
-                })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                min={2}
-                max={20}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                모임 방식
-              </label>
-              <select
-                {...register('meetingType', { required: true })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="online">온라인</option>
-                <option value="offline">오프라인</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                모임 요일
-              </label>
-              <select
-                {...register('meetingDay', { required: true })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="monday">월요일</option>
-                <option value="tuesday">화요일</option>
-                <option value="wednesday">수요일</option>
-                <option value="thursday">목요일</option>
-                <option value="friday">금요일</option>
-                <option value="saturday">토요일</option>
-                <option value="sunday">일요일</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                모임 시간
-              </label>
-              <input
-                type="time"
-                {...register('meetingTime', { required: true })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                모임 주기
-              </label>
-              <select
-                {...register('meetingFrequency', { required: true })}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="weekly">매주</option>
-                <option value="biweekly">격주</option>
-                <option value="monthly">매월</option>
-              </select>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center text-base font-semibold"
+          <FormControl fullWidth>
+            <InputLabel id="meeting-type-label">모임 방식</InputLabel>
+            <Select
+              labelId="meeting-type-label"
+              label="모임 방식"
+              defaultValue=""
+              {...register('meetingType', { required: true })}
+              error={!!errors.meetingType}
             >
-              <span className="mr-2">📅</span>
-              모임 만들기
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+              <MenuItem value="online">온라인</MenuItem>
+              <MenuItem value="offline">오프라인</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth>
+            <InputLabel id="meeting-day-label">모임 요일</InputLabel>
+            <Select
+              labelId="meeting-day-label"
+              label="모임 요일"
+              defaultValue=""
+              {...register('meetingDay', { required: true })}
+              error={!!errors.meetingDay}
+            >
+              <MenuItem value="monday">월요일</MenuItem>
+              <MenuItem value="tuesday">화요일</MenuItem>
+              <MenuItem value="wednesday">수요일</MenuItem>
+              <MenuItem value="thursday">목요일</MenuItem>
+              <MenuItem value="friday">금요일</MenuItem>
+              <MenuItem value="saturday">토요일</MenuItem>
+              <MenuItem value="sunday">일요일</MenuItem>
+            </Select>
+          </FormControl>
+
+          <TextField
+            fullWidth
+            label="모임 시간"
+            type="time"
+            {...register('meetingTime', { required: true })}
+            error={!!errors.meetingTime}
+            InputLabelProps={{ shrink: true }}
+          />
+
+          <FormControl fullWidth>
+            <InputLabel id="meeting-frequency-label">모임 빈도</InputLabel>
+            <Select
+              labelId="meeting-frequency-label"
+              label="모임 빈도"
+              defaultValue=""
+              {...register('meetingFrequency', { required: true })}
+              error={!!errors.meetingFrequency}
+            >
+              <MenuItem value="weekly">매주</MenuItem>
+              <MenuItem value="biweekly">격주</MenuItem>
+              <MenuItem value="monthly">매월</MenuItem>
+            </Select>
+          </FormControl>
+
+          {watch('meetingType') === 'offline' && (
+            <TextField
+              fullWidth
+              label="모임 장소"
+              {...register('location', { required: true })}
+              error={!!errors.location}
+              placeholder="오프라인 모임 장소를 입력해주세요"
+            />
+          )}
+
+          <TextField
+            fullWidth
+            label="최대 참여 인원"
+            type="number"
+            {...register('maxParticipants', {
+              required: true,
+              min: 2,
+              max: 20,
+            })}
+            error={!!errors.maxParticipants}
+            inputProps={{ min: 2, max: 20 }}
+          />
+
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            size="large"
+            fullWidth
+            sx={{ mt: 2 }}
+          >
+            모임 만들기
+          </Button>
+        </Box>
+      </Paper>
+    </Box>
   );
 }
