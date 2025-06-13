@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import Image from 'next/image';
 import { Book } from '@prisma/client';
 import {
@@ -19,6 +19,25 @@ import {
 } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import DiscussionQuestionItem from './DiscussionQuestionItem';
+
+// 날짜 포맷팅 함수
+// "2025-06-13" 형식으로 반환
+const formatDate = (date: Date): string => {
+  return date.toISOString().split('T')[0];
+};
+
+// 한 달 후 날짜 반환 함수
+const getOneMonthLater = (date: Date): Date => {
+  return new Date(date.getTime() + 30 * 24 * 60 * 60 * 1000);
+};
+
+// 현재 시간을 "HH:mm" 형식으로 반환
+const formatCurrentTime = (): string => {
+  const now = new Date();
+  const hours = now.getHours().toString().padStart(2, '0');
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
 
 interface MeetingCreationProps {
   book: Book;
@@ -45,12 +64,27 @@ export default function MeetingCreation({
   discussionId,
 }: MeetingCreationProps) {
   const router = useRouter();
+
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
     watch,
-  } = useForm<MeetingFormData>();
+  } = useForm<MeetingFormData>({
+    mode: 'all',
+    defaultValues: {
+      title: '',
+      description: '',
+      startDate: formatDate(new Date()),
+      endDate: formatDate(getOneMonthLater(new Date())),
+      maxParticipants: 2,
+      meetingType: 'online',
+      meetingDay: 'monday',
+      meetingTime: formatCurrentTime(),
+      meetingFrequency: 'weekly',
+    },
+  });
 
   const onSubmit = async (data: MeetingFormData) => {
     try {
@@ -80,10 +114,7 @@ export default function MeetingCreation({
   return (
     <Box className="max-w-[800px] mx-auto p-3 space-y-4">
       {/* 책 정보 섹션 */}
-      <Accordion
-        defaultExpanded
-        className="shadow-md rounded-xl overflow-hidden"
-      >
+      <Accordion className="shadow-md rounded-xl overflow-hidden">
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
           aria-controls="book-info-content"
@@ -130,10 +161,7 @@ export default function MeetingCreation({
       </Accordion>
 
       {/* 토론 질문 섹션 */}
-      <Accordion
-        defaultExpanded
-        className="shadow-md rounded-xl overflow-hidden"
-      >
+      <Accordion className="shadow-md rounded-xl overflow-hidden">
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
           aria-controls="questions-content"
@@ -184,7 +212,10 @@ export default function MeetingCreation({
               label="모임 소개"
               multiline
               rows={4}
-              {...register('description', { required: true })}
+              {...register('description', {
+                required: '모임 소개는 필수입니다',
+              })}
+              helperText={errors.description?.message}
               error={!!errors.description}
               placeholder="모임에 대해 소개해주세요"
             />
@@ -194,8 +225,19 @@ export default function MeetingCreation({
                 fullWidth
                 label="시작일"
                 type="date"
-                {...register('startDate', { required: true })}
+                {...register('startDate', {
+                  required: '시작일을 선택해주세요',
+                  validate: (value) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return (
+                      new Date(value) >= today ||
+                      '시작일은 오늘 이후여야 합니다'
+                    );
+                  },
+                })}
                 error={!!errors.startDate}
+                helperText={errors.startDate?.message}
                 slotProps={{ inputLabel: { shrink: true } }}
               />
 
@@ -203,43 +245,65 @@ export default function MeetingCreation({
                 fullWidth
                 label="종료일"
                 type="date"
-                {...register('endDate', { required: true })}
+                {...register('endDate', {
+                  required: '종료일을 선택해주세요',
+                  validate: (value) => {
+                    const startDate = watch('startDate');
+                    return (
+                      new Date(value) >= new Date(startDate) ||
+                      '종료일은 시작일 이후여야 합니다'
+                    );
+                  },
+                })}
                 error={!!errors.endDate}
+                helperText={errors.endDate?.message}
                 slotProps={{ inputLabel: { shrink: true } }}
               />
             </div>
 
             <FormControl fullWidth>
               <InputLabel id="meeting-type-label">모임 방식</InputLabel>
-              <Select
-                labelId="meeting-type-label"
-                label="모임 방식"
-                defaultValue=""
-                {...register('meetingType', { required: true })}
-                error={!!errors.meetingType}
-              >
-                <MenuItem value="online">🖥️ 온라인</MenuItem>
-                <MenuItem value="offline">🏢 오프라인</MenuItem>
-              </Select>
+              <Controller
+                name="meetingType"
+                control={control}
+                rules={{ required: '모임 방식을 선택해주세요' }}
+                render={({ field }) => (
+                  <Select
+                    labelId="meeting-type-label"
+                    label="모임 방식"
+                    {...field}
+                    error={!!errors.meetingType}
+                  >
+                    <MenuItem value="online">🖥️ 온라인</MenuItem>
+                    <MenuItem value="offline">🏢 오프라인</MenuItem>
+                  </Select>
+                )}
+              />
             </FormControl>
 
             <FormControl fullWidth>
               <InputLabel id="meeting-day-label">모임 요일</InputLabel>
-              <Select
-                labelId="meeting-day-label"
-                label="모임 요일"
-                defaultValue=""
-                {...register('meetingDay', { required: true })}
-                error={!!errors.meetingDay}
-              >
-                <MenuItem value="monday">월요일</MenuItem>
-                <MenuItem value="tuesday">화요일</MenuItem>
-                <MenuItem value="wednesday">수요일</MenuItem>
-                <MenuItem value="thursday">목요일</MenuItem>
-                <MenuItem value="friday">금요일</MenuItem>
-                <MenuItem value="saturday">토요일</MenuItem>
-                <MenuItem value="sunday">일요일</MenuItem>
-              </Select>
+              <Controller
+                name="meetingDay"
+                control={control}
+                rules={{ required: '모임 요일을 선택해주세요' }}
+                render={({ field }) => (
+                  <Select
+                    labelId="meeting-day-label"
+                    label="모임 요일"
+                    {...field}
+                    error={!!errors.meetingDay}
+                  >
+                    <MenuItem value="monday">월요일</MenuItem>
+                    <MenuItem value="tuesday">화요일</MenuItem>
+                    <MenuItem value="wednesday">수요일</MenuItem>
+                    <MenuItem value="thursday">목요일</MenuItem>
+                    <MenuItem value="friday">금요일</MenuItem>
+                    <MenuItem value="saturday">토요일</MenuItem>
+                    <MenuItem value="sunday">일요일</MenuItem>
+                  </Select>
+                )}
+              />
             </FormControl>
 
             <TextField
@@ -253,17 +317,23 @@ export default function MeetingCreation({
 
             <FormControl fullWidth>
               <InputLabel id="meeting-frequency-label">모임 빈도</InputLabel>
-              <Select
-                labelId="meeting-frequency-label"
-                label="모임 빈도"
-                defaultValue=""
-                {...register('meetingFrequency', { required: true })}
-                error={!!errors.meetingFrequency}
-              >
-                <MenuItem value="weekly">매주</MenuItem>
-                <MenuItem value="biweekly">격주</MenuItem>
-                <MenuItem value="monthly">매월</MenuItem>
-              </Select>
+              <Controller
+                name="meetingFrequency"
+                control={control}
+                rules={{ required: '모임 빈도를 선택해주세요' }}
+                render={({ field }) => (
+                  <Select
+                    labelId="meeting-frequency-label"
+                    label="모임 빈도"
+                    {...field}
+                    error={!!errors.meetingFrequency}
+                  >
+                    <MenuItem value="weekly">매주</MenuItem>
+                    <MenuItem value="biweekly">격주</MenuItem>
+                    <MenuItem value="monthly">매월</MenuItem>
+                  </Select>
+                )}
+              />
             </FormControl>
 
             {watch('meetingType') === 'offline' && (
