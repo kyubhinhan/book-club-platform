@@ -152,6 +152,29 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
 
   return (
     <Box className="max-w-[800px] mx-auto p-3 space-y-4">
+      {/* 뒤로가기 버튼 */}
+      <Button
+        variant="text"
+        onClick={() => router.push('/?restoreState=true')}
+        className="mb-2 flex items-center gap-1"
+        sx={{ color: '#6366f1', fontWeight: 500 }}
+      >
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M10 19l-7-7m0 0l7-7m-7 7h18"
+          />
+        </svg>
+        책 목록으로 돌아가기
+      </Button>
       {/* 책 정보 섹션 */}
       <Accordion className="shadow-md rounded-xl overflow-hidden">
         <AccordionSummary
