@@ -168,7 +168,7 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
         variant="text"
         onClick={() => router.push('/?restoreState=true')}
         className="flex items-center gap-1"
-        sx={{ color: '#6366f1', fontWeight: 50, mb: 2 }}
+        sx={{ fontWeight: 600, mb: 2 }}
       >
         <svg
           className="w-5 h-5"

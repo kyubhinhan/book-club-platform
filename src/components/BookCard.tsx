@@ -11,6 +11,7 @@ export interface BookWithSummary {
   isbn: string | null;
   category: string;
   imageUrl: string | null;
+  link: string | null;
   publisher: string | null;
   price: number | null;
   pubDate: string | null;
@@ -39,7 +40,7 @@ export default function BookCard({ book, currentBooks }: BookCardProps) {
   };
 
   return (
-    <div className="flex gap-8 p-6 border rounded-xl hover:shadow-lg transition-shadow bg-white h-[500px] overflow-hidden">
+    <div className="flex gap-8 p-6 border-gray-200 border rounded-xl hover:shadow-lg transition-shadow bg-white h-[520px] overflow-hidden">
       {/* 책 이미지 */}
       <div className="w-1/3 flex-shrink-0">
         <Image
@@ -61,6 +62,16 @@ export default function BookCard({ book, currentBooks }: BookCardProps) {
           <p className="text-lg text-gray-600 mt-2 truncate">
             저자: {book.author}
           </p>
+          {book.link && (
+            <a
+              href={book.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-1 text-primary-600 hover:underline text-sm font-medium"
+            >
+              상세 정보 보기 ↗
+            </a>
+          )}
         </div>
 
         {/* 스크롤 가능한 설명 영역 */}

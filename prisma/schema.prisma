@@ -83,6 +83,7 @@ model Book {
   isbn        String?     @unique  // ISBN을 String으로 저장
   category    String
   imageUrl    String?      // 도서 표지 이미지 URL
+  link        String?      // 도서 상세 정보 URL
   publisher   String?      // 출판사
   price       Int?         // 가격
   pubDate     DateTime?    // 출간일

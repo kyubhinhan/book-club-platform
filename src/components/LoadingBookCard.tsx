@@ -1,6 +1,6 @@
 export default function LoadingBookCard() {
   return (
-    <div className="flex gap-8 p-6 border rounded-xl bg-white h-[500px] overflow-hidden animate-pulse">
+    <div className="flex gap-8 p-6 border-gray-200 border rounded-xl bg-white h-[520px] overflow-hidden animate-pulse">
       {/* 책 이미지 스켈레톤 */}
       <div className="w-1/3 flex-shrink-0">
         <div className="w-full h-full bg-gray-200 rounded-lg" />

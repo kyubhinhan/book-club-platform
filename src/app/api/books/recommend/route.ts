@@ -81,6 +81,7 @@ async function findOrFetchBook(
       description: bookInfo.book.description,
       isbn: bookInfo.book.isbn,
       category: '', // 카테고리는 나중에 설정
+      link: bookInfo.book.link,
       imageUrl: bookInfo.book.imageUrl,
       publisher: bookInfo.book.publisher,
       price: bookInfo.book.price,
