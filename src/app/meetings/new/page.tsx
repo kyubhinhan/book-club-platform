@@ -5,52 +5,39 @@ import { useEffect, useState } from 'react';
 import MeetingCreation from '@/components/MeetingCreation';
 import { Book } from '@prisma/client';
 
-interface Discussion {
-  id: string;
-  questions: string[];
-  bookId: string;
-  book: Book;
-}
-
 export default function NewMeetingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const discussionId = searchParams.get('discussionId');
-  const [discussion, setDiscussion] = useState<Discussion | null>(null);
+  const bookId = searchParams.get('bookId');
+  const [book, setBook] = useState<Book | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!discussionId) {
-      router.push('/books');
-      return;
-    }
-
-    const fetchData = async () => {
-      try {
-        // Fetch discussion data with included book data
-        const discussionResponse = await fetch(
-          `/api/discussions/${discussionId}`
-        );
-        if (!discussionResponse.ok) {
-          throw new Error('Failed to fetch discussion data');
+    if (bookId) {
+      const fetchBook = async () => {
+        try {
+          const bookResponse = await fetch(`/api/books/${bookId}`);
+          if (!bookResponse.ok) {
+            throw new Error('Failed to fetch book data');
+          }
+          const bookData = await bookResponse.json();
+          setBook(bookData);
+        } catch (error) {
+          setError(
+            error instanceof Error
+              ? error.message
+              : '책 정보를 가져오는데 실패했습니다.'
+          );
+        } finally {
+          setLoading(false);
         }
-        const discussionData = await discussionResponse.json();
-        setDiscussion(discussionData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setError(
-          error instanceof Error
-            ? error.message
-            : '데이터를 가져오는데 실패했습니다.'
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [discussionId, router]);
+      };
+      fetchBook();
+    } else {
+      router.push('/books');
+    }
+  }, [bookId, router]);
 
   if (loading) {
     return (
@@ -73,17 +60,13 @@ export default function NewMeetingPage() {
     );
   }
 
-  if (!discussion) {
-    return null;
+  if (book) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <MeetingCreation book={book} />
+      </main>
+    );
   }
 
-  return (
-    <main className="min-h-screen bg-gray-50">
-      <MeetingCreation
-        book={discussion.book}
-        discussionQuestions={discussion.questions}
-        discussionId={discussion.id}
-      />
-    </main>
-  );
+  return null;
 }

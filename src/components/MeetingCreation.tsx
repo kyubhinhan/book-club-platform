@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import DiscussionQuestionItem from './DiscussionQuestionItem';
+import { useState, useEffect } from 'react';
 
 // 날짜 포맷팅 함수
 // "2025-06-13" 형식으로 반환
@@ -41,8 +42,6 @@ const formatCurrentTime = (): string => {
 
 interface MeetingCreationProps {
   book: Book;
-  discussionQuestions: string[];
-  discussionId: string;
 }
 
 interface MeetingFormData {
@@ -58,12 +57,48 @@ interface MeetingFormData {
   meetingFrequency: string;
 }
 
-export default function MeetingCreation({
-  book,
-  discussionQuestions,
-  discussionId,
-}: MeetingCreationProps) {
+export default function MeetingCreation({ book }: MeetingCreationProps) {
   const router = useRouter();
+  const [questions, setQuestions] = useState<string[]>([]);
+  const [questionInput, setQuestionInput] = useState('');
+  const [questionError, setQuestionError] = useState<string | null>(null);
+  const [loadingQuestions, setLoadingQuestions] = useState(true);
+
+  useEffect(() => {
+    const fetchDefaultQuestions = async () => {
+      setLoadingQuestions(true);
+      try {
+        const res = await fetch('/api/discussions/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookId: book.id }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setQuestions(data.discussion.questions || []);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setLoadingQuestions(false);
+      }
+    };
+    fetchDefaultQuestions();
+  }, [book.id]);
+
+  const addQuestion = () => {
+    if (questionInput.trim().length < 5) {
+      setQuestionError('질문은 5자 이상이어야 합니다.');
+      return;
+    }
+    setQuestions([...questions, questionInput.trim()]);
+    setQuestionInput('');
+    setQuestionError(null);
+  };
+
+  const removeQuestion = (index: number) => {
+    setQuestions(questions.filter((_, i) => i !== index));
+  };
 
   const {
     register,
@@ -87,6 +122,10 @@ export default function MeetingCreation({
   });
 
   const onSubmit = async (data: MeetingFormData) => {
+    if (questions.length === 0) {
+      setQuestionError('최소 1개의 발제 질문을 입력해주세요.');
+      return;
+    }
     try {
       const response = await fetch('/api/meetings/create', {
         method: 'POST',
@@ -96,7 +135,7 @@ export default function MeetingCreation({
         body: JSON.stringify({
           ...data,
           bookId: book.id,
-          discussionId,
+          questions,
         }),
       });
 
@@ -105,7 +144,7 @@ export default function MeetingCreation({
       }
 
       const result = await response.json();
-      router.push(`/meetings/${result.id}`);
+      router.push(`/meetings/${result.meeting.id}`);
     } catch (error) {
       console.error('Error creating meeting:', error);
     }
@@ -161,7 +200,10 @@ export default function MeetingCreation({
       </Accordion>
 
       {/* 토론 질문 섹션 */}
-      <Accordion className="shadow-md rounded-xl overflow-hidden">
+      <Accordion
+        className="shadow-md rounded-xl overflow-hidden"
+        defaultExpanded
+      >
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
           aria-controls="questions-content"
@@ -174,15 +216,54 @@ export default function MeetingCreation({
         </AccordionSummary>
         <AccordionDetails>
           <div className="p-4 bg-white">
-            <ul className="space-y-3">
-              {discussionQuestions.map((question, index) => (
-                <DiscussionQuestionItem
-                  key={index}
-                  question={question}
-                  index={index}
-                />
-              ))}
-            </ul>
+            {loadingQuestions ? (
+              <div className="text-gray-500">기본 발제문을 불러오는 중...</div>
+            ) : (
+              <>
+                <div className="flex gap-2 mb-4">
+                  <TextField
+                    fullWidth
+                    value={questionInput}
+                    onChange={(e) => setQuestionInput(e.target.value)}
+                    placeholder="새로운 발제 질문을 입력하세요"
+                    error={!!questionError}
+                    helperText={questionError}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addQuestion();
+                      }
+                    }}
+                  />
+                  <Button
+                    variant="contained"
+                    onClick={addQuestion}
+                    disabled={questionInput.trim().length < 5}
+                    sx={{ minWidth: 100 }}
+                  >
+                    추가
+                  </Button>
+                </div>
+                <ul className="space-y-3">
+                  {questions.map((question, index) => (
+                    <li key={index} className="flex items-center group">
+                      <DiscussionQuestionItem
+                        question={question}
+                        index={index}
+                      />
+                      <Button
+                        onClick={() => removeQuestion(index)}
+                        color="error"
+                        size="small"
+                        sx={{ ml: 1, opacity: 0.7 }}
+                      >
+                        삭제
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
         </AccordionDetails>
       </Accordion>

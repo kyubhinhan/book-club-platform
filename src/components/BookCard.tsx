@@ -33,10 +33,9 @@ export default function BookCard({ book, currentBooks }: BookCardProps) {
       ? `${book.description?.slice(0, 150)}...`
       : book.description;
 
-  const handleGenerateDiscussion = () => {
-    // 현재 추천 목록 저장 후 발제문 생성 페이지로 이동
+  const handleGenerateMeeting = () => {
     BookRecommendationManager.saveState(currentBooks.map((book) => book.id));
-    router.push(`/discussions/new?bookId=${book.id}`);
+    router.push(`/meetings/new?bookId=${book.id}`);
   };
 
   return (
@@ -95,10 +94,10 @@ export default function BookCard({ book, currentBooks }: BookCardProps) {
           </div>
 
           <button
-            onClick={handleGenerateDiscussion}
+            onClick={handleGenerateMeeting}
             className="w-full py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>✍️ 발제문 생성하기</span>
+            <span> 🍵 모임 만들기</span>
           </button>
         </div>
       </div>

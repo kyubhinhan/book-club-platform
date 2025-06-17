@@ -15,13 +15,21 @@ export async function POST(request: Request) {
       meetingTime,
       meetingFrequency,
       bookId,
-      discussionId,
+      questions,
     } = await request.json();
 
     // TODO: Get clubId from authenticated user's context
     const clubId = 'temp-club-id'; // Temporary for development
 
-    // Create meeting
+    // 1. discussion 생성
+    const discussion = await prisma.discussion.create({
+      data: {
+        questions,
+        bookId,
+      },
+    });
+
+    // 2. meeting 생성 (discussionId 연결)
     const meeting = await prisma.meeting.create({
       data: {
         title,
@@ -36,16 +44,7 @@ export async function POST(request: Request) {
         meetingFrequency,
         bookId,
         clubId,
-      },
-    });
-
-    // Update discussion with meetingId
-    await prisma.discussion.update({
-      where: {
-        id: discussionId,
-      },
-      data: {
-        meetingId: meeting.id,
+        discussion: { connect: { id: discussion.id } },
       },
     });
 

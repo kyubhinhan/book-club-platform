@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+'use client';
+import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 
 interface DateVote {
@@ -25,11 +26,7 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [votingLoading, setVotingLoading] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchMeetingDetails();
-  }, [meetingId]);
-
-  const fetchMeetingDetails = async () => {
+  const fetchMeetingDetails = useCallback(async () => {
     try {
       const [meetingResponse, votesResponse] = await Promise.all([
         fetch(`/api/meetings/${meetingId}`),
@@ -54,7 +51,11 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [meetingId]);
+
+  useEffect(() => {
+    fetchMeetingDetails();
+  }, [fetchMeetingDetails, meetingId]);
 
   const handleVote = async (dateId: string) => {
     setVotingLoading(dateId);
