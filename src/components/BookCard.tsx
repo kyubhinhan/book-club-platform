@@ -97,7 +97,7 @@ export default function BookCard({ book, currentBooks }: BookCardProps) {
             onClick={handleGenerateMeeting}
             className="w-full py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span> 🍵 모임 만들기</span>
+            <span> 🚀 모임 만들기</span>
           </button>
         </div>
       </div>
