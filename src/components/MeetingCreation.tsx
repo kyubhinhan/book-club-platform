@@ -63,6 +63,9 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
   const [questionInput, setQuestionInput] = useState('');
   const [questionError, setQuestionError] = useState<string | null>(null);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
+  const [recommendationReason, setRecommendationReason] = useState(
+    book.recommendationReason || ''
+  );
 
   useEffect(() => {
     const fetchDefaultQuestions = async () => {
@@ -136,6 +139,7 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
           ...data,
           bookId: book.id,
           questions,
+          recommendationReason,
         }),
       });
 
@@ -187,7 +191,7 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
         책 목록으로 돌아가기
       </Button>
       <Box className="space-y-4">
-        {/* 책 정보 섹션 */}
+        {/* 책 정보 섹션 - Accordion */}
         <Accordion className="shadow-md rounded-xl overflow-hidden">
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
@@ -200,32 +204,41 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
             </Typography>
           </AccordionSummary>
           <AccordionDetails className="p-0">
-            <div className="p-6 bg-white">
+            <div className="flex gap-8 bg-white h-[350px]">
               {/* 책 이미지 */}
-              <div className="mb-6 mx-auto max-w-[300px]">
-                <div className="relative w-full pt-[133%]">
-                  <Image
-                    src={book.imageUrl || '/default-book-cover.jpg'}
-                    alt={book.title}
-                    fill
-                    className="object-cover rounded-lg shadow-md"
-                  />
-                </div>
+              <div className="w-1/3 flex-shrink-0">
+                <Image
+                  src={book.imageUrl || '/images/default-book-cover.jpg'}
+                  alt={book.title}
+                  width={240}
+                  height={320}
+                  className="w-full h-full object-cover rounded-lg shadow-md"
+                />
               </div>
-
               {/* 책 정보 */}
-              <div className="space-y-4">
-                <div>
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+              <div className="w-2/3 flex flex-col h-full overflow-hidden">
+                {/* 제목, 저자, 링크 */}
+                <div className="mb-4 flex-shrink-0">
+                  <h2 className="text-xl font-semibold text-gray-900 truncate">
                     {book.title}
                   </h2>
-                  <p className="text-lg text-gray-600 flex items-center gap-2">
-                    ✍️ 저자: {book.author}
+                  <p className="text-lg text-gray-600 mt-2 truncate">
+                    저자: {book.author}
                   </p>
+                  {book.link && (
+                    <a
+                      href={book.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mt-1 text-primary-600 hover:underline text-sm font-medium"
+                    >
+                      상세 정보 보기 ↗
+                    </a>
+                  )}
                 </div>
-
-                <div className="prose prose-gray max-w-none">
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                {/* 설명(줄거리) - 스크롤 */}
+                <div className="flex-1 overflow-y-auto pr-4">
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
                     {book.description}
                   </p>
                 </div>
@@ -303,6 +316,17 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
               onSubmit={handleSubmit(onSubmit)}
               className="flex flex-col gap-5"
             >
+              <div>
+                <label className="block text-base font-semibold text-primary-900 mb-2">
+                  📚 추천 이유
+                </label>
+                <textarea
+                  className="w-full p-2 border border-gray-200 rounded-lg text-gray-700 min-h-[60px] resize-y focus:outline-none focus:ring-2 focus:ring-primary-200"
+                  value={recommendationReason}
+                  onChange={(e) => setRecommendationReason(e.target.value)}
+                  placeholder="이 책을 추천하는 이유를 입력해주세요"
+                />
+              </div>
               <TextField
                 fullWidth
                 label="모임 제목"
