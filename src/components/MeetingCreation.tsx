@@ -18,8 +18,8 @@ import {
   AccordionDetails,
 } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
-import DiscussionQuestionItem from './DiscussionQuestionItem';
 import { useState, useEffect } from 'react';
+import { useDebounce } from '../hooks/useDebounce';
 
 // 날짜 포맷팅 함수
 // "2025-06-13" 형식으로 반환
@@ -87,7 +87,7 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
     fetchDefaultQuestions();
   }, [book.id]);
 
-  const addQuestion = () => {
+  const addQuestionCore = () => {
     if (questionInput.trim().length < 5) {
       setQuestionError('질문은 5자 이상이어야 합니다.');
       return;
@@ -96,6 +96,7 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
     setQuestionInput('');
     setQuestionError(null);
   };
+  const addQuestion = useDebounce(addQuestionCore, 100);
 
   const removeQuestion = (index: number) => {
     setQuestions(questions.filter((_, i) => i !== index));
@@ -259,36 +260,47 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
               💡 발제 질문
             </Typography>
           </AccordionSummary>
-          <AccordionDetails>
-            <div className="p-4 bg-white">
-              <div className="flex gap-2 mb-4">
-                <TextField
-                  fullWidth
-                  value={questionInput}
-                  onChange={(e) => setQuestionInput(e.target.value)}
-                  placeholder="새로운 발제 질문을 입력하세요"
-                  error={!!questionError}
-                  helperText={questionError}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addQuestion();
-                    }
-                  }}
-                />
-                <Button
-                  variant="contained"
-                  onClick={addQuestion}
-                  disabled={questionInput.trim().length < 5}
-                  sx={{ minWidth: 100 }}
-                >
-                  추가
-                </Button>
-              </div>
-              <ul className="space-y-3">
-                {questions.map((question, index) => (
-                  <li key={index} className="flex items-center group">
-                    <DiscussionQuestionItem question={question} index={index} />
+          <AccordionDetails className="p-0">
+            <div className="flex gap-2">
+              <TextField
+                fullWidth
+                value={questionInput}
+                onChange={(e) => {
+                  setQuestionInput(e.target.value);
+                  setQuestionError(null);
+                }}
+                placeholder="새로운 발제 질문을 입력하세요"
+                error={!!questionError}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addQuestion();
+                  }
+                }}
+              />
+              <Button
+                variant="contained"
+                onClick={addQuestion}
+                disabled={questionInput.trim().length < 5}
+                sx={{ minWidth: 100 }}
+              >
+                추가
+              </Button>
+            </div>
+            {questionError && (
+              <p className="text-red-500 text-sm mb-4">{questionError}</p>
+            )}
+            {!questionError && <div className="mb-4"></div>}
+            <ul className="space-y-3">
+              {questions.map((question, index) => (
+                <li key={index} className="flex items-center group">
+                  <div className="flex-1 flex items-center p-4 bg-primary-50 rounded-lg group">
+                    <span className="flex-shrink-0 w-7 h-7 flex items-center justify-center bg-primary-600 text-white rounded-full mr-3 text-base">
+                      {index + 1}
+                    </span>
+                    <p className="text-gray-800 text-base leading-relaxed flex-1">
+                      {question}
+                    </p>
                     <Button
                       onClick={() => removeQuestion(index)}
                       color="error"
@@ -297,10 +309,10 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
                     >
                       삭제
                     </Button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </AccordionDetails>
         </Accordion>
         {/* 모임 생성 폼 */}

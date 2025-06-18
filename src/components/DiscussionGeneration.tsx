@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import DiscussionQuestionItem from './DiscussionQuestionItem';
 
 interface Discussion {
   questions: string[];
@@ -243,7 +242,14 @@ export default function DiscussionGeneration() {
                   key={index}
                   className="flex items-center justify-center group"
                 >
-                  <DiscussionQuestionItem question={question} index={index} />
+                  <div className="flex items-center p-4 bg-primary-50 rounded-lg group">
+                    <span className="flex-shrink-0 w-7 h-7 flex items-center justify-center bg-primary-600 text-white rounded-full mr-3 text-base">
+                      {index + 1}
+                    </span>
+                    <p className="text-gray-800 text-base leading-relaxed flex-1">
+                      {question}
+                    </p>
+                  </div>
                   <button
                     onClick={() => handleDeleteQuestion(index)}
                     className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 transition-opacity cursor-pointer"
