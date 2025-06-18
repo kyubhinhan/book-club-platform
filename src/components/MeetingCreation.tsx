@@ -261,7 +261,9 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
             </Typography>
           </AccordionSummary>
           <AccordionDetails className="p-0">
-            <div className="flex gap-2">
+            <div
+              className={`flex gap-2 ${questionError == null ? 'mb-4' : ''}`}
+            >
               <TextField
                 fullWidth
                 value={questionInput}
@@ -290,7 +292,6 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
             {questionError && (
               <p className="text-red-500 text-sm mb-4">{questionError}</p>
             )}
-            {!questionError && <div className="mb-4"></div>}
             <ul className="space-y-3">
               {questions.map((question, index) => (
                 <li key={index} className="flex items-center group">
