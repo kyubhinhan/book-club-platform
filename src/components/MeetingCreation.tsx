@@ -55,6 +55,7 @@ interface MeetingFormData {
   meetingDay: string;
   meetingTime: string;
   meetingFrequency: string;
+  recommendationReason: string;
 }
 
 export default function MeetingCreation({ book }: MeetingCreationProps) {
@@ -63,9 +64,6 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
   const [questionInput, setQuestionInput] = useState('');
   const [questionError, setQuestionError] = useState<string | null>(null);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
-  const [recommendationReason, setRecommendationReason] = useState(
-    book.recommendationReason || ''
-  );
 
   useEffect(() => {
     const fetchDefaultQuestions = async () => {
@@ -121,6 +119,7 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
       meetingDay: 'monday',
       meetingTime: formatCurrentTime(),
       meetingFrequency: 'weekly',
+      recommendationReason: book.recommendationReason || '',
     },
   });
 
@@ -139,7 +138,6 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
           ...data,
           bookId: book.id,
           questions,
-          recommendationReason,
         }),
       });
 
@@ -316,17 +314,20 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
               onSubmit={handleSubmit(onSubmit)}
               className="flex flex-col gap-5"
             >
-              <div>
-                <label className="block text-base font-semibold text-primary-900 mb-2">
-                  📚 추천 이유
-                </label>
-                <textarea
-                  className="w-full p-2 border border-gray-200 rounded-lg text-gray-700 min-h-[60px] resize-y focus:outline-none focus:ring-2 focus:ring-primary-200"
-                  value={recommendationReason}
-                  onChange={(e) => setRecommendationReason(e.target.value)}
-                  placeholder="이 책을 추천하는 이유를 입력해주세요"
-                />
-              </div>
+              <TextField
+                fullWidth
+                label="책 추천 이유"
+                multiline
+                minRows={3}
+                {...register('recommendationReason', {
+                  required: '추천 이유는 필수입니다',
+                })}
+                error={!!errors.recommendationReason}
+                helperText={errors.recommendationReason?.message}
+                placeholder="이 책을 추천하는 이유를 입력해주세요"
+                className="mb-2"
+              />
+
               <TextField
                 fullWidth
                 label="모임 제목"
