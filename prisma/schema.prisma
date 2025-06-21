@@ -43,26 +43,25 @@ model BookClub {
 }
 
 model Meeting {
-  id              String            @id @default(cuid())
-  title           String
-  description     String?
-  startDate       DateTime
-  endDate         DateTime
-  maxParticipants Int
-  meetingType     String           // 'online' or 'offline'
-  location        String?
-  meetingDay      String           // 'monday', 'tuesday', etc.
-  meetingTime     String           // HH:mm format
-  meetingFrequency String          // 'weekly', 'biweekly', 'monthly'
-  bookId          String
-  book            Book             @relation(fields: [bookId], references: [id])
-  clubId          String
-  club            BookClub         @relation(fields: [clubId], references: [id])
-  participants    User[]           @relation("MeetingParticipants")
-  discussion      Discussion?
-  dateVotes       MeetingDateVote[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id                String            @id @default(cuid())
+  title             String
+  description       String?
+  meetingDate       DateTime
+  maxParticipants   Int
+  location          String
+  startTime         String            // HH:mm format
+  endTime           String            // HH:mm format
+  recommendationReason String
+  range             String?
+  bookId            String
+  book              Book              @relation(fields: [bookId], references: [id])
+  clubId            String
+  club              BookClub          @relation(fields: [clubId], references: [id])
+  participants      User[]            @relation("MeetingParticipants")
+  discussion        Discussion?
+  dateVotes         MeetingDateVote[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 }
 
 model MeetingDateVote {

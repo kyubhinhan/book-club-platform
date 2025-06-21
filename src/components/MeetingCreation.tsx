@@ -1,15 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import Image from 'next/image';
 import { Book } from '@prisma/client';
 import {
   TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   Button,
   Box,
   Typography,
@@ -27,17 +23,16 @@ const formatDate = (date: Date): string => {
   return date.toISOString().split('T')[0];
 };
 
-// 한 달 후 날짜 반환 함수
-const getOneMonthLater = (date: Date): Date => {
-  return new Date(date.getTime() + 30 * 24 * 60 * 60 * 1000);
-};
-
 // 현재 시간을 "HH:mm" 형식으로 반환
-const formatCurrentTime = (): string => {
-  const now = new Date();
+const formatCurrentTime = (date: Date): string => {
+  const now = date;
   const hours = now.getHours().toString().padStart(2, '0');
   const minutes = now.getMinutes().toString().padStart(2, '0');
   return `${hours}:${minutes}`;
+};
+
+const getTwoHourLater = (date: Date): Date => {
+  return new Date(date.getTime() + 2 * 60 * 60 * 1000);
 };
 
 interface MeetingCreationProps {
@@ -47,15 +42,13 @@ interface MeetingCreationProps {
 interface MeetingFormData {
   title: string;
   description: string;
-  startDate: string;
-  endDate: string;
+  meetingDate: string;
   maxParticipants: number;
-  meetingType: 'online' | 'offline';
-  location?: string;
-  meetingDay: string;
-  meetingTime: string;
-  meetingFrequency: string;
+  location: string;
+  startTime: string;
+  endTime: string;
   recommendationReason: string;
+  range?: string;
 }
 
 export default function MeetingCreation({ book }: MeetingCreationProps) {
@@ -102,25 +95,24 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
     setQuestions(questions.filter((_, i) => i !== index));
   };
 
+  const currentDate = new Date();
+
   const {
     register,
     handleSubmit,
-    control,
-    formState: { errors },
     watch,
+    formState: { errors },
   } = useForm<MeetingFormData>({
     mode: 'all',
     defaultValues: {
       title: '',
       description: '',
-      startDate: formatDate(new Date()),
-      endDate: formatDate(getOneMonthLater(new Date())),
+      meetingDate: formatDate(currentDate),
       maxParticipants: 2,
-      meetingType: 'online',
-      meetingDay: 'monday',
-      meetingTime: formatCurrentTime(),
-      meetingFrequency: 'weekly',
+      startTime: formatCurrentTime(currentDate),
+      endTime: formatCurrentTime(getTwoHourLater(currentDate)),
       recommendationReason: book.recommendationReason || '',
+      range: '',
     },
   });
 
@@ -329,20 +321,6 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
             >
               <TextField
                 fullWidth
-                label="책 추천 이유"
-                multiline
-                minRows={3}
-                {...register('recommendationReason', {
-                  required: '추천 이유는 필수입니다',
-                })}
-                error={!!errors.recommendationReason}
-                helperText={errors.recommendationReason?.message}
-                placeholder="이 책을 추천하는 이유를 입력해주세요"
-                className="mb-2"
-              />
-
-              <TextField
-                fullWidth
                 label="모임 제목"
                 {...register('title', { required: '모임 제목은 필수입니다' })}
                 error={!!errors.title}
@@ -363,131 +341,83 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
                 placeholder="모임에 대해 소개해주세요"
               />
 
-              <div className="flex align-center gap-4">
+              <TextField
+                fullWidth
+                label="책 추천 이유"
+                multiline
+                minRows={3}
+                {...register('recommendationReason', {
+                  required: '추천 이유는 필수입니다',
+                })}
+                error={!!errors.recommendationReason}
+                helperText={errors.recommendationReason?.message}
+                placeholder="이 책을 추천하는 이유를 입력해주세요"
+              />
+
+              <TextField
+                fullWidth
+                label="책 범위"
+                {...register('range')}
+                error={!!errors.range}
+                helperText={errors.range?.message}
+                placeholder="책 범위를 입력해주세요"
+              />
+
+              <TextField
+                fullWidth
+                label="모임일"
+                type="date"
+                {...register('meetingDate', {
+                  required: '모임일을 선택해주세요',
+                  validate: (value) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return (
+                      new Date(value) >= today ||
+                      '모임일은 오늘 이후여야 합니다'
+                    );
+                  },
+                })}
+                error={!!errors.meetingDate}
+                helperText={errors.meetingDate?.message}
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+
+              <div className="flex gap-4">
                 <TextField
                   fullWidth
-                  label="시작일"
-                  type="date"
-                  {...register('startDate', {
-                    required: '시작일을 선택해주세요',
-                    validate: (value) => {
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      return (
-                        new Date(value) >= today ||
-                        '시작일은 오늘 이후여야 합니다'
-                      );
-                    },
-                  })}
-                  error={!!errors.startDate}
-                  helperText={errors.startDate?.message}
+                  label="시작 시간"
+                  type="time"
+                  {...register('startTime', { required: true })}
+                  error={!!errors.startTime}
                   slotProps={{ inputLabel: { shrink: true } }}
                 />
-
                 <TextField
                   fullWidth
-                  label="종료일"
-                  type="date"
-                  {...register('endDate', {
-                    required: '종료일을 선택해주세요',
+                  label="종료 시간"
+                  type="time"
+                  {...register('endTime', {
+                    required: true,
                     validate: (value) => {
-                      const startDate = watch('startDate');
+                      const startTime = watch('startTime');
                       return (
-                        new Date(value) >= new Date(startDate) ||
-                        '종료일은 시작일 이후여야 합니다'
+                        value >= startTime ||
+                        '종료 시간은 시작 시간 이후여야 합니다'
                       );
                     },
                   })}
-                  error={!!errors.endDate}
-                  helperText={errors.endDate?.message}
+                  error={!!errors.endTime}
                   slotProps={{ inputLabel: { shrink: true } }}
                 />
               </div>
 
-              <FormControl fullWidth>
-                <InputLabel id="meeting-type-label">모임 방식</InputLabel>
-                <Controller
-                  name="meetingType"
-                  control={control}
-                  rules={{ required: '모임 방식을 선택해주세요' }}
-                  render={({ field }) => (
-                    <Select
-                      labelId="meeting-type-label"
-                      label="모임 방식"
-                      {...field}
-                      error={!!errors.meetingType}
-                    >
-                      <MenuItem value="online">🖥️ 온라인</MenuItem>
-                      <MenuItem value="offline">🏢 오프라인</MenuItem>
-                    </Select>
-                  )}
-                />
-              </FormControl>
-
-              <FormControl fullWidth>
-                <InputLabel id="meeting-day-label">모임 요일</InputLabel>
-                <Controller
-                  name="meetingDay"
-                  control={control}
-                  rules={{ required: '모임 요일을 선택해주세요' }}
-                  render={({ field }) => (
-                    <Select
-                      labelId="meeting-day-label"
-                      label="모임 요일"
-                      {...field}
-                      error={!!errors.meetingDay}
-                    >
-                      <MenuItem value="monday">월요일</MenuItem>
-                      <MenuItem value="tuesday">화요일</MenuItem>
-                      <MenuItem value="wednesday">수요일</MenuItem>
-                      <MenuItem value="thursday">목요일</MenuItem>
-                      <MenuItem value="friday">금요일</MenuItem>
-                      <MenuItem value="saturday">토요일</MenuItem>
-                      <MenuItem value="sunday">일요일</MenuItem>
-                    </Select>
-                  )}
-                />
-              </FormControl>
-
               <TextField
                 fullWidth
-                label="모임 시간"
-                type="time"
-                {...register('meetingTime', { required: true })}
-                error={!!errors.meetingTime}
-                slotProps={{ inputLabel: { shrink: true } }}
+                label="모임 장소"
+                {...register('location', { required: true })}
+                error={!!errors.location}
+                placeholder="오프라인 모임 장소를 입력해주세요"
               />
-
-              <FormControl fullWidth>
-                <InputLabel id="meeting-frequency-label">모임 빈도</InputLabel>
-                <Controller
-                  name="meetingFrequency"
-                  control={control}
-                  rules={{ required: '모임 빈도를 선택해주세요' }}
-                  render={({ field }) => (
-                    <Select
-                      labelId="meeting-frequency-label"
-                      label="모임 빈도"
-                      {...field}
-                      error={!!errors.meetingFrequency}
-                    >
-                      <MenuItem value="weekly">매주</MenuItem>
-                      <MenuItem value="biweekly">격주</MenuItem>
-                      <MenuItem value="monthly">매월</MenuItem>
-                    </Select>
-                  )}
-                />
-              </FormControl>
-
-              {watch('meetingType') === 'offline' && (
-                <TextField
-                  fullWidth
-                  label="모임 장소"
-                  {...register('location', { required: true })}
-                  error={!!errors.location}
-                  placeholder="오프라인 모임 장소를 입력해주세요"
-                />
-              )}
 
               <TextField
                 fullWidth
@@ -506,6 +436,7 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
                 type="submit"
                 variant="contained"
                 fullWidth
+                disabled={Object.keys(errors).length > 0}
                 className="bg-primary-600 hover:bg-primary-700 py-3 text-lg"
               >
                 모임 생성하기
