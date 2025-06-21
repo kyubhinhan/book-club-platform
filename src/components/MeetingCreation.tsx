@@ -13,9 +13,15 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from '@mui/material';
-import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import {
+  ExpandMore as ExpandMoreIcon,
+  CloudUpload as CloudUploadIcon,
+} from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
+import React from 'react';
+import { MeetingData } from '@/types/meeting';
+import { FILE_UPLOAD_CONFIG, fileUploadUtils } from '@/config/fileUpload';
 
 // 날짜 포맷팅 함수
 // "2025-06-13" 형식으로 반환
@@ -39,24 +45,14 @@ interface MeetingCreationProps {
   book: Book;
 }
 
-interface MeetingFormData {
-  title: string;
-  description: string;
-  meetingDate: string;
-  maxParticipants: number;
-  location: string;
-  startTime: string;
-  endTime: string;
-  recommendationReason: string;
-  range?: string;
-}
-
 export default function MeetingCreation({ book }: MeetingCreationProps) {
   const router = useRouter();
   const [questions, setQuestions] = useState<string[]>([]);
   const [questionInput, setQuestionInput] = useState('');
   const [questionError, setQuestionError] = useState<string | null>(null);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchDefaultQuestions = async () => {
@@ -102,7 +98,7 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
     handleSubmit,
     watch,
     formState: { errors },
-  } = useForm<MeetingFormData>({
+  } = useForm<MeetingData>({
     mode: 'all',
     defaultValues: {
       title: '',
@@ -113,33 +109,89 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
       endTime: formatCurrentTime(getTwoHourLater(currentDate)),
       recommendationReason: book.recommendationReason || '',
       range: '',
+      attachments: [],
+      bookId: book.id,
     },
   });
 
-  const onSubmit = async (data: MeetingFormData) => {
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    const validFiles = files.filter((file) => {
+      if (!fileUploadUtils.isValidFileSize(file.size)) {
+        alert(
+          `${file.name} 파일이 너무 큽니다. (최대 ${fileUploadUtils.formatFileSize(FILE_UPLOAD_CONFIG.MAX_FILE_SIZE)}MB)`
+        );
+        return false;
+      }
+      if (!fileUploadUtils.isValidMimeType(file.type)) {
+        alert(`${file.name} 파일 형식이 지원되지 않습니다.`);
+        return false;
+      }
+      return true;
+    });
+    setAttachments((prev) => [...prev, ...validFiles]);
+  };
+
+  const handleFileButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const onSubmit = async (data: MeetingData) => {
     if (questions.length === 0) {
       setQuestionError('최소 1개의 발제 질문을 입력해주세요.');
       return;
     }
     try {
-      const response = await fetch('/api/meetings/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...data,
-          bookId: book.id,
-          questions,
-        }),
+      // 1. 모임 생성 (파일 없이)
+      const meetingFormData = new FormData();
+
+      // 기본 데이터 추가
+      Object.keys(data).forEach((key) => {
+        if (key !== 'attachments' && key !== 'questions') {
+          meetingFormData.append(key, data[key as keyof MeetingData] as string);
+        }
       });
 
-      if (!response.ok) {
+      // 추가 데이터
+      meetingFormData.append('bookId', book.id);
+      meetingFormData.append('questions', JSON.stringify(questions));
+
+      const meetingResponse = await fetch('/api/meetings/create', {
+        method: 'POST',
+        body: meetingFormData,
+      });
+
+      if (!meetingResponse.ok) {
         throw new Error('Failed to create meeting');
       }
 
-      const result = await response.json();
-      router.push(`/meetings/${result.meeting.id}`);
+      const meetingResult = await meetingResponse.json();
+      const meetingId = meetingResult.meeting.id;
+
+      // 2. 파일이 있으면 별도로 업로드
+      if (attachments.length > 0) {
+        const fileFormData = new FormData();
+        fileFormData.append('meetingId', meetingId);
+
+        attachments.forEach((file) => {
+          fileFormData.append('files', file);
+        });
+
+        const fileResponse = await fetch('/api/attachments/upload', {
+          method: 'POST',
+          body: fileFormData,
+        });
+
+        if (!fileResponse.ok) {
+          console.warn('File upload failed, but meeting was created');
+        }
+      }
+
+      router.push(`/meetings/${meetingId}`);
     } catch (error) {
       console.error('Error creating meeting:', error);
     }
@@ -431,6 +483,72 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
                 slotProps={{ htmlInput: { min: 2, max: 20 } }}
                 error={!!errors.maxParticipants}
               />
+
+              {/* 파일 업로드 섹션 */}
+              <div>
+                <Typography
+                  variant="subtitle2"
+                  color="textSecondary"
+                  gutterBottom
+                >
+                  참고 자료
+                </Typography>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept={FILE_UPLOAD_CONFIG.ALLOWED_EXTENSIONS.map(
+                    (ext) => `.${ext}`
+                  ).join(',')}
+                  onChange={handleFileUpload}
+                  style={{ display: 'none' }}
+                />
+                <Button
+                  variant="outlined"
+                  startIcon={<CloudUploadIcon />}
+                  onClick={handleFileButtonClick}
+                  fullWidth
+                  sx={{
+                    py: 1.5,
+                    borderStyle: 'dashed',
+                    borderWidth: 2,
+                  }}
+                >
+                  파일 선택하기
+                </Button>
+                <Typography
+                  variant="caption"
+                  color="textSecondary"
+                  sx={{ mt: 1, display: 'block' }}
+                >
+                  {FILE_UPLOAD_CONFIG.FILE_TYPE_DESCRIPTION}
+                </Typography>
+
+                {attachments.length > 0 && (
+                  <div className="space-y-2 mt-3">
+                    {attachments.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                      >
+                        <div className="flex items-center">
+                          <span className="text-sm text-gray-600 mr-2">
+                            {file.name} (
+                            {fileUploadUtils.formatFileSize(file.size)}MB)
+                          </span>
+                        </div>
+                        <Button
+                          size="small"
+                          color="error"
+                          onClick={() => removeAttachment(index)}
+                        >
+                          삭제
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <Button
                 type="submit"
