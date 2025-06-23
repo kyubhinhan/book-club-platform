@@ -5,7 +5,8 @@ export interface MeetingData {
   startTime: string;
   endTime: string;
   maxParticipants: number;
-  location: string;
+  address: string;
+  detailedAddress?: string;
   recommendationReason: string;
   range?: string;
   bookId: string;

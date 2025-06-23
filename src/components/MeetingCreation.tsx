@@ -12,6 +12,10 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
@@ -52,6 +56,8 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
   const [questionError, setQuestionError] = useState<string | null>(null);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [addressDialogOpen, setAddressDialogOpen] = useState(false);
+  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -97,9 +103,9 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<MeetingData>({
-    mode: 'all',
     defaultValues: {
       title: '',
       description: '',
@@ -111,6 +117,8 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
       range: '',
       attachments: [],
       bookId: book.id,
+      address: '',
+      detailedAddress: '',
     },
   });
 
@@ -196,6 +204,76 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
       console.error('Error creating meeting:', error);
     }
   };
+
+  // Daum Postcode 스크립트 로드 (한 번만)
+  useEffect(() => {
+    if (isScriptLoaded) return;
+
+    const script = document.createElement('script');
+    script.src =
+      '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+    script.async = true;
+
+    script.onload = () => {
+      setIsScriptLoaded(true);
+    };
+
+    document.head.appendChild(script);
+
+    return () => {
+      // 컴포넌트 언마운트 시에만 스크립트 제거
+      const existingScript = document.querySelector(
+        'script[src*="postcode.v2.js"]'
+      );
+      if (existingScript) {
+        document.head.removeChild(existingScript);
+      }
+    };
+  }, [isScriptLoaded]);
+
+  // 주소 검색 다이얼로그 열기
+  const openAddressSearch = () => {
+    setAddressDialogOpen(true);
+  };
+
+  // Daum Postcode 인스턴스 생성 (다이얼로그가 열릴 때마다)
+  useEffect(() => {
+    if (!addressDialogOpen || !isScriptLoaded) return;
+
+    // 주소 검색 완료 처리
+    const handleAddressSelect = (address: string) => {
+      setValue('address', address, { shouldValidate: true });
+      setAddressDialogOpen(false);
+    };
+
+    // DOM이 완전히 렌더링된 후 Postcode 인스턴스 생성
+    const timer = setTimeout(() => {
+      const container = document.getElementById('daum-postcode-container');
+
+      if (container) {
+        // Postcode 인스턴스 생성
+        new window.daum.Postcode({
+          oncomplete: function (data: {
+            address: string;
+            extraAddress?: string;
+          }) {
+            const address = data.address;
+            const extraAddress = data.extraAddress;
+            const fullAddress = extraAddress
+              ? `${address} ${extraAddress}`
+              : address;
+            handleAddressSelect(fullAddress);
+          },
+          width: '100%',
+          height: '100%',
+        }).embed(container);
+      }
+    }, 100); // 100ms 지연
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [addressDialogOpen, isScriptLoaded, setValue]);
 
   if (loadingQuestions) {
     return (
@@ -465,14 +543,6 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
 
               <TextField
                 fullWidth
-                label="모임 장소"
-                {...register('location', { required: true })}
-                error={!!errors.location}
-                placeholder="오프라인 모임 장소를 입력해주세요"
-              />
-
-              <TextField
-                fullWidth
                 label="최대 참여 인원"
                 type="number"
                 {...register('maxParticipants', {
@@ -483,6 +553,36 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
                 slotProps={{ htmlInput: { min: 2, max: 20 } }}
                 error={!!errors.maxParticipants}
               />
+
+              <TextField
+                fullWidth
+                label="주소"
+                {...register('address', { required: '주소는 필수입니다' })}
+                error={!!errors.address}
+                helperText={errors.address?.message}
+                placeholder="주소 검색을 통해 주소를 선택해주세요"
+                slotProps={{
+                  input: {
+                    readOnly: true,
+                  },
+                  inputLabel: { shrink: true },
+                }}
+                onClick={openAddressSearch}
+                sx={{
+                  '& .MuiInputBase-root': {
+                    cursor: 'pointer',
+                  },
+                }}
+              />
+
+              {watch('address') && (
+                <TextField
+                  fullWidth
+                  label="상세 주소"
+                  {...register('detailedAddress')}
+                  placeholder="건물명, 층수, 호수 등을 입력해주세요"
+                />
+              )}
 
               {/* 파일 업로드 섹션 */}
               <div>
@@ -563,6 +663,22 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
           </div>
         </div>
       </Box>
+
+      {/* 주소 검색 다이얼로그 */}
+      <Dialog
+        open={addressDialogOpen}
+        onClose={() => setAddressDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>주소 검색</DialogTitle>
+        <DialogContent>
+          <div id="daum-postcode-container" style={{ height: '450px' }}></div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddressDialogOpen(false)}>취소</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
