@@ -62,9 +62,9 @@ export default function NewMeetingPage() {
 
   if (book) {
     return (
-      <main className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50">
         <MeetingCreation book={book} />
-      </main>
+      </div>
     );
   }
 

@@ -13,12 +13,14 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.10.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^7.1.1",
     "@mui/material": "^7.1.1",
     "@prisma/client": "^6.8.2",
     "axios": "^1.9.0",
+    "bcryptjs": "^3.0.2",
     "cloudinary": "^2.7.0",
     "date-fns": "^4.1.0",
     "next": "15.3.2",
