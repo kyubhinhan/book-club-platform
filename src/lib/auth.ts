@@ -58,9 +58,24 @@ export const authOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }: { token: JWT; user?: User }) {
+    async jwt({
+      token,
+      user,
+      trigger,
+      session,
+    }: {
+      token: JWT & { name?: string; email?: string };
+      user?: User;
+      trigger: string;
+      session: { name?: string; email?: string };
+    }) {
       if (user) {
         token.id = user.id;
+      }
+
+      if (trigger === 'update') {
+        token.name = session.name;
+        token.email = session.email;
       }
 
       return token;

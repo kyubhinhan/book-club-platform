@@ -64,8 +64,12 @@ export default function CompleteProfile() {
       });
 
       if (response.ok) {
-        await update();
-        window.location.replace('/');
+        const session = await update({
+          name: data.name,
+          email: data.email,
+        });
+        console.log('session', session);
+        router.push('/');
       } else {
         const errorData = await response.json();
         setError(
