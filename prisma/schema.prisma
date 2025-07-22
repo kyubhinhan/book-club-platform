@@ -27,6 +27,7 @@ model Account {
   scope             String?
   id_token          String? @db.Text
   session_state     String?
+  refresh_token_expires_in Int? // 추가: refresh_token 만료 시간(초)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

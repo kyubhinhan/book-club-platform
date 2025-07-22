@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession, signOut } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Group as GroupIcon, Person as PersonIcon } from '@mui/icons-material';
@@ -23,6 +23,10 @@ export default function Sidebar() {
       href: '/meetings',
     },
   ];
+
+  useEffect(() => {
+    console.log('name', session?.user?.name);
+  }, [session?.user?.name]);
 
   return (
     <div

@@ -62,12 +62,14 @@ export const authOptions = {
       if (user) {
         token.id = user.id;
       }
+
       return token;
     },
     async session({ session, token }: { session: Session; token: JWT }) {
       if (session.user && token) {
         session.user.id = token.id as string;
       }
+
       return session;
     },
   },

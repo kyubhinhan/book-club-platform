@@ -50,7 +50,7 @@ export default function SignIn() {
   const handleKakaoSignIn = async () => {
     setIsLoading(true);
     try {
-      await signIn('kakao', { callbackUrl: '/' });
+      await signIn('kakao', { callbackUrl: '/auth/complete-profile' });
     } catch {
       setError('카카오 로그인 중 오류가 발생했습니다.');
       setIsLoading(false);
