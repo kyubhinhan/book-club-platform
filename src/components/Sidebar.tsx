@@ -1,15 +1,21 @@
 'use client';
 
 import { useSession, signOut } from 'next-auth/react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Group as GroupIcon, Person as PersonIcon } from '@mui/icons-material';
+import { usePathname } from 'next/navigation';
+import {
+  Group as GroupIcon,
+  Person as PersonIcon,
+  Psychology as PsychologyIcon,
+} from '@mui/icons-material';
 import { SIDEBAR_WIDTH_PX } from '@/lib/constants';
 
 export default function Sidebar() {
   const { data: session, status } = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: '/' });
@@ -18,15 +24,16 @@ export default function Sidebar() {
 
   const menuItems = [
     {
+      text: 'AI 도서 추천',
+      icon: <PsychologyIcon className="w-5 h-5" />,
+      href: '/',
+    },
+    {
       text: '모임 관리하기',
       icon: <GroupIcon className="w-5 h-5" />,
       href: '/meetings',
     },
   ];
-
-  useEffect(() => {
-    console.log('name', session?.user?.name);
-  }, [session?.user?.name]);
 
   return (
     <div
@@ -46,16 +53,25 @@ export default function Sidebar() {
       <div className="flex-1 pt-4">
         <nav aria-label="메인 네비게이션">
           <ul>
-            {menuItems.map((item) => (
-              <li key={item.text}>
-                <Link href={item.href} className="block mx-2 mb-1">
-                  <div className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200">
-                    <span className="text-blue-600 mr-3">{item.icon}</span>
-                    <span className="font-medium">{item.text}</span>
-                  </div>
-                </Link>
-              </li>
-            ))}
+            {menuItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <li key={item.text}>
+                  <Link href={item.href} className="block mx-2 mb-1">
+                    <div
+                      className={`flex items-center px-4 py-3 rounded-lg transition-colors duration-200 ${
+                        isActive
+                          ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-600'
+                          : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                      }`}
+                    >
+                      <span className={`mr-3 text-blue-600`}>{item.icon}</span>
+                      <span className="font-medium">{item.text}</span>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </nav>
       </div>
