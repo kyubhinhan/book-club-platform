@@ -30,7 +30,10 @@ import { FILE_UPLOAD_CONFIG, fileUploadUtils } from '@/config/fileUpload';
 // 날짜 포맷팅 함수
 // "2025-06-13" 형식으로 반환
 const formatDate = (date: Date): string => {
-  return date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 // 현재 시간을 "HH:mm" 형식으로 반환

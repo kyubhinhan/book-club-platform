@@ -95,20 +95,9 @@ model Meeting {
   creator           User              @relation("MeetingCreator", fields: [creatorId], references: [id])
   participants      User[]            @relation("MeetingParticipants")
   discussion        Discussion?
-  dateVotes         MeetingDateVote[]
   attachments       Attachment[]
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
-}
-
-model MeetingDateVote {
-  id        String   @id @default(cuid())
-  meetingId String
-  meeting   Meeting  @relation(fields: [meetingId], references: [id])
-  date      DateTime
-  votes     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model Book {
