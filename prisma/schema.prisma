@@ -58,6 +58,7 @@ model User {
   memberClubs   BookClub[] @relation("ClubMembers")
   posts         Post[]
   meetings      Meeting[]  @relation("MeetingParticipants")
+  createdMeetings Meeting[] @relation("MeetingCreator")
 }
 
 model BookClub {
@@ -90,6 +91,8 @@ model Meeting {
   book              Book              @relation(fields: [bookId], references: [id])
   clubId            String?           // 선택적으로 변경
   club              BookClub?         @relation(fields: [clubId], references: [id]) // 선택적으로 변경
+  creatorId         String            // 모임을 만든 사람의 ID
+  creator           User              @relation("MeetingCreator", fields: [creatorId], references: [id])
   participants      User[]            @relation("MeetingParticipants")
   discussion        Discussion?
   dateVotes         MeetingDateVote[]

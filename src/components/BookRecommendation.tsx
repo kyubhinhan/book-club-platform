@@ -53,7 +53,7 @@ export default function BookRecommendation() {
   const selectedCategory = watch('category');
 
   useEffect(() => {
-    const shouldRestoreState = searchParams.get('restoreState') === 'true';
+    const shouldRestoreState = searchParams?.get('restoreState') === 'true';
 
     if (shouldRestoreState) {
       const savedBookIds = BookRecommendationManager.getState();

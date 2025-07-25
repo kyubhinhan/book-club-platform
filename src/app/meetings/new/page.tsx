@@ -8,7 +8,7 @@ import { Book } from '@prisma/client';
 export default function NewMeetingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const bookId = searchParams.get('bookId');
+  const bookId = searchParams?.get('bookId');
   const [book, setBook] = useState<Book | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
