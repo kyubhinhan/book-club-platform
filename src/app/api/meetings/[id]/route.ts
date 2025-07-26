@@ -1,21 +1,41 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
 import { prisma } from '@/lib/prisma';
+import { authOptions } from '@/lib/auth';
+import { Session } from 'next-auth';
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const meetingId = params.id;
 
     const meeting = await prisma.meeting.findUnique({
-      where: {
-        id: meetingId,
-      },
+      where: { id: meetingId },
       include: {
         book: true,
-        discussion: true,
-        creator: true,
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
+        participants: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
+        discussion: {
+          include: {
+            book: true,
+          },
+        },
       },
     });
 
@@ -28,36 +48,101 @@ export async function GET(
 
     return NextResponse.json({ meeting });
   } catch (error) {
-    console.error('Meeting fetch error:', error);
+    console.error('Error fetching meeting:', error);
     return NextResponse.json(
-      { error: '모임 정보를 가져오는 중 오류가 발생했습니다.' },
+      { error: '모임 정보를 가져오는데 실패했습니다.' },
       { status: 500 }
     );
   }
 }
 
-export async function PATCH(
-  request: Request,
+export async function PUT(
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const meetingId = params.id;
-    const { date } = await request.json();
+    const session = (await getServerSession(
+      authOptions as any
+    )) as Session | null;
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: '로그인이 필요합니다.' },
+        { status: 401 }
+      );
+    }
 
-    const meeting = await prisma.meeting.update({
-      where: {
-        id: meetingId,
-      },
-      data: {
-        date: new Date(date),
+    const meetingId = params.id;
+    const formData = await request.formData();
+
+    // 기존 모임 확인
+    const existingMeeting = await prisma.meeting.findUnique({
+      where: { id: meetingId },
+      include: {
+        creator: true,
+        discussion: true,
       },
     });
 
-    return NextResponse.json({ meeting });
+    if (!existingMeeting) {
+      return NextResponse.json(
+        { error: '모임을 찾을 수 없습니다.' },
+        { status: 404 }
+      );
+    }
+
+    // 생성자만 수정 가능
+    if (existingMeeting.creatorId !== session.user.id) {
+      return NextResponse.json(
+        { error: '모임을 수정할 권한이 없습니다.' },
+        { status: 403 }
+      );
+    }
+
+    // 폼 데이터 추출
+    const title = formData.get('title') as string;
+    const description = formData.get('description') as string;
+    const meetingDate = formData.get('meetingDate') as string;
+    const startTime = formData.get('startTime') as string;
+    const endTime = formData.get('endTime') as string;
+    const maxParticipants = parseInt(formData.get('maxParticipants') as string);
+    const address = formData.get('address') as string;
+    const detailedAddress = formData.get('detailedAddress') as string;
+    const recommendationReason = formData.get('recommendationReason') as string;
+    const range = formData.get('range') as string;
+    const questions = JSON.parse(formData.get('questions') as string);
+
+    // 모임 업데이트
+    const updatedMeeting = await prisma.meeting.update({
+      where: { id: meetingId },
+      data: {
+        title,
+        description,
+        meetingDate: new Date(meetingDate),
+        startTime,
+        endTime,
+        maxParticipants,
+        address,
+        detailedAddress,
+        recommendationReason,
+        range,
+      },
+    });
+
+    // 발제문 업데이트
+    if (existingMeeting.discussion) {
+      await prisma.discussion.update({
+        where: { id: existingMeeting.discussion.id },
+        data: {
+          questions,
+        },
+      });
+    }
+
+    return NextResponse.json({ meeting: updatedMeeting });
   } catch (error) {
-    console.error('Meeting update error:', error);
+    console.error('Error updating meeting:', error);
     return NextResponse.json(
-      { error: '모임 정보 업데이트 중 오류가 발생했습니다.' },
+      { error: '모임 수정에 실패했습니다.' },
       { status: 500 }
     );
   }

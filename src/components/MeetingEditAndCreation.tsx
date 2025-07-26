@@ -24,7 +24,7 @@ import {
 import { useState, useEffect } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
 import React from 'react';
-import { MeetingData } from '@/types/meeting';
+import { MeetingData, Meeting } from '@/types/meeting';
 import { FILE_UPLOAD_CONFIG, fileUploadUtils } from '@/config/fileUpload';
 
 // 날짜 포맷팅 함수
@@ -48,57 +48,26 @@ const getTwoHourLater = (date: Date): Date => {
   return new Date(date.getTime() + 2 * 60 * 60 * 1000);
 };
 
-interface MeetingCreationProps {
+interface MeetingEditAndCreationProps {
   book: Book;
+  meetingId?: string; // 수정 모드일 때만 전달
 }
 
-export default function MeetingCreation({ book }: MeetingCreationProps) {
+export default function MeetingEditAndCreation({
+  book,
+  meetingId,
+}: MeetingEditAndCreationProps) {
   const router = useRouter();
   const [questions, setQuestions] = useState<string[]>([]);
   const [questionInput, setQuestionInput] = useState('');
   const [questionError, setQuestionError] = useState<string | null>(null);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
+  const [loadingMeeting, setLoadingMeeting] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [addressDialogOpen, setAddressDialogOpen] = useState(false);
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const fetchDefaultQuestions = async () => {
-      setLoadingQuestions(true);
-      try {
-        const res = await fetch('/api/discussions/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bookId: book.id }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setQuestions(data.discussion.questions || []);
-        }
-      } catch {
-        // ignore
-      } finally {
-        setLoadingQuestions(false);
-      }
-    };
-    fetchDefaultQuestions();
-  }, [book.id]);
-
-  const addQuestionCore = () => {
-    if (questionInput.trim().length < 5) {
-      setQuestionError('질문은 5자 이상이어야 합니다.');
-      return;
-    }
-    setQuestions([...questions, questionInput.trim()]);
-    setQuestionInput('');
-    setQuestionError(null);
-  };
-  const addQuestion = useDebounce(addQuestionCore, 100);
-
-  const removeQuestion = (index: number) => {
-    setQuestions(questions.filter((_, i) => i !== index));
-  };
 
   const currentDate = new Date();
 
@@ -124,6 +93,90 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
       detailedAddress: '',
     },
   });
+
+  // 수정 모드일 때 기존 모임 정보 로드
+  useEffect(() => {
+    if (meetingId) {
+      setIsEditMode(true);
+      setLoadingMeeting(true);
+
+      const fetchMeeting = async () => {
+        try {
+          const response = await fetch(`/api/meetings/${meetingId}`);
+          if (response.ok) {
+            const data = await response.json();
+            const meeting: Meeting = data.meeting;
+
+            // 폼 데이터 설정
+            setValue('title', meeting.title);
+            setValue('description', meeting.description || '');
+            setValue('meetingDate', formatDate(new Date(meeting.meetingDate)));
+            setValue('maxParticipants', meeting.maxParticipants);
+            setValue('startTime', meeting.startTime);
+            setValue('endTime', meeting.endTime);
+            setValue('recommendationReason', meeting.recommendationReason);
+            setValue('range', meeting.range || '');
+            setValue('address', meeting.address);
+            setValue('detailedAddress', meeting.detailedAddress || '');
+
+            // 발제문 설정
+            if (meeting.discussion) {
+              setQuestions(meeting.discussion.questions);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching meeting:', error);
+        } finally {
+          setLoadingMeeting(false);
+        }
+      };
+
+      fetchMeeting();
+    }
+  }, [meetingId, setValue]);
+
+  useEffect(() => {
+    const fetchDefaultQuestions = async () => {
+      setLoadingQuestions(true);
+      try {
+        if (isEditMode && questions.length > 0) {
+          // 수정 모드이고 이미 질문이 있으면 스킵
+          setLoadingQuestions(false);
+          return;
+        }
+
+        const res = await fetch('/api/discussions/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookId: book.id }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setQuestions(data.discussion.questions || []);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setLoadingQuestions(false);
+      }
+    };
+    fetchDefaultQuestions();
+  }, [book.id, isEditMode, questions.length]);
+
+  const addQuestionCore = () => {
+    if (questionInput.trim().length < 5) {
+      setQuestionError('질문은 5자 이상이어야 합니다.');
+      return;
+    }
+    setQuestions([...questions, questionInput.trim()]);
+    setQuestionInput('');
+    setQuestionError(null);
+  };
+  const addQuestion = useDebounce(addQuestionCore, 100);
+
+  const removeQuestion = (index: number) => {
+    setQuestions(questions.filter((_, i) => i !== index));
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -157,54 +210,71 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
       return;
     }
     try {
-      // 1. 모임 생성 (파일 없이)
-      const meetingFormData = new FormData();
+      const formData = new FormData();
 
       // 기본 데이터 추가
       Object.keys(data).forEach((key) => {
         if (key !== 'attachments' && key !== 'questions') {
-          meetingFormData.append(key, data[key as keyof MeetingData] as string);
+          formData.append(key, data[key as keyof MeetingData] as string);
         }
       });
 
       // 추가 데이터
-      meetingFormData.append('bookId', book.id);
-      meetingFormData.append('questions', JSON.stringify(questions));
+      formData.append('bookId', book.id);
+      formData.append('questions', JSON.stringify(questions));
 
-      const meetingResponse = await fetch('/api/meetings/create', {
-        method: 'POST',
-        body: meetingFormData,
-      });
+      if (isEditMode && meetingId) {
+        // 수정 모드
+        formData.append('meetingId', meetingId);
 
-      if (!meetingResponse.ok) {
-        throw new Error('Failed to create meeting');
-      }
-
-      const meetingResult = await meetingResponse.json();
-      const meetingId = meetingResult.meeting.id;
-
-      // 2. 파일이 있으면 별도로 업로드
-      if (attachments.length > 0) {
-        const fileFormData = new FormData();
-        fileFormData.append('meetingId', meetingId);
-
-        attachments.forEach((file) => {
-          fileFormData.append('files', file);
+        const response = await fetch(`/api/meetings/${meetingId}`, {
+          method: 'PUT',
+          body: formData,
         });
 
-        const fileResponse = await fetch('/api/attachments/upload', {
-          method: 'POST',
-          body: fileFormData,
-        });
-
-        if (!fileResponse.ok) {
-          console.warn('File upload failed, but meeting was created');
+        if (!response.ok) {
+          throw new Error('Failed to update meeting');
         }
-      }
 
-      router.push(`/meetings/${meetingId}`);
+        const result = await response.json();
+        router.push(`/meetings/${meetingId}`);
+      } else {
+        // 생성 모드
+        const meetingResponse = await fetch('/api/meetings/create', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!meetingResponse.ok) {
+          throw new Error('Failed to create meeting');
+        }
+
+        const meetingResult = await meetingResponse.json();
+        const newMeetingId = meetingResult.meeting.id;
+
+        // 2. 파일이 있으면 별도로 업로드
+        if (attachments.length > 0) {
+          const fileFormData = new FormData();
+          fileFormData.append('meetingId', newMeetingId);
+
+          attachments.forEach((file) => {
+            fileFormData.append('files', file);
+          });
+
+          const fileResponse = await fetch('/api/attachments/upload', {
+            method: 'POST',
+            body: fileFormData,
+          });
+
+          if (!fileResponse.ok) {
+            console.warn('File upload failed, but meeting was created');
+          }
+        }
+
+        router.push(`/meetings/${newMeetingId}`);
+      }
     } catch (error) {
-      console.error('Error creating meeting:', error);
+      console.error('Error saving meeting:', error);
     }
   };
 
@@ -278,12 +348,14 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
     };
   }, [addressDialogOpen, isScriptLoaded, setValue]);
 
-  if (loadingQuestions) {
+  if (loadingQuestions || loadingMeeting) {
     return (
       <Box className="flex flex-col items-center justify-center min-h-[60vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
         <Typography variant="h6" color="textSecondary">
-          기본 발제문을 불러오는 중...
+          {isEditMode
+            ? '모임 정보를 불러오는 중...'
+            : '기본 발제문을 불러오는 중...'}
         </Typography>
       </Box>
     );
@@ -294,7 +366,11 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
       {/* 뒤로가기 버튼 */}
       <Button
         variant="text"
-        onClick={() => router.push('/?restoreState=true')}
+        onClick={() =>
+          router.push(
+            isEditMode ? `/meetings/${meetingId}` : '/?restoreState=true'
+          )
+        }
         className="flex items-center gap-1"
         sx={{ fontWeight: 600, mb: 2 }}
       >
@@ -312,7 +388,7 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
             d="M10 19l-7-7m0 0l7-7m-7 7h18"
           />
         </svg>
-        책 목록으로 돌아가기
+        {isEditMode ? '모임 상세로 돌아가기' : '책 목록으로 돌아가기'}
       </Button>
       <Box className="space-y-4">
         {/* 책 정보 섹션 - Accordion */}
@@ -441,11 +517,11 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
             </ul>
           </AccordionDetails>
         </Accordion>
-        {/* 모임 생성 폼 */}
+        {/* 모임 생성/수정 폼 */}
         <div className="bg-white shadow-md rounded-xl border border-gray-100">
           <div className="p-6">
             <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-              🤝 모임 만들기
+              {isEditMode ? '✏️ 모임 수정하기' : '🤝 모임 만들기'}
             </h2>
             <Box
               component="form"
@@ -476,15 +552,15 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
 
               <TextField
                 fullWidth
-                label="책 추천 이유"
+                label="책 선정 이유"
                 multiline
                 minRows={3}
                 {...register('recommendationReason', {
-                  required: '추천 이유는 필수입니다',
+                  required: '선정 이유는 필수입니다',
                 })}
                 error={!!errors.recommendationReason}
                 helperText={errors.recommendationReason?.message}
-                placeholder="이 책을 추천하는 이유를 입력해주세요"
+                placeholder="이 책을 선정하는 이유를 입력해주세요"
               />
 
               <TextField
@@ -660,7 +736,7 @@ export default function MeetingCreation({ book }: MeetingCreationProps) {
                 disabled={Object.keys(errors).length > 0}
                 className="bg-primary-600 hover:bg-primary-700 py-3 text-lg"
               >
-                모임 생성하기
+                {isEditMode ? '모임 수정하기' : '모임 생성하기'}
               </Button>
             </Box>
           </div>

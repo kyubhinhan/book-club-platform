@@ -1,22 +1,31 @@
 'use client';
 
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import MeetingEditAndCreation from '@/components/MeetingEditAndCreation';
 import { Book } from '@prisma/client';
 
-export default function NewMeetingPage() {
+export default function EditMeetingPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const bookId = searchParams?.get('bookId');
+  const params = useParams();
+  const meetingId = params?.id as string;
   const [book, setBook] = useState<Book | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (bookId) {
-      const fetchBook = async () => {
+    if (meetingId) {
+      const fetchMeetingAndBook = async () => {
         try {
+          // 먼저 모임 정보를 가져와서 책 ID를 확인
+          const meetingResponse = await fetch(`/api/meetings/${meetingId}`);
+          if (!meetingResponse.ok) {
+            throw new Error('Failed to fetch meeting data');
+          }
+          const meetingData = await meetingResponse.json();
+          const bookId = meetingData.meeting.bookId;
+
+          // 책 정보 가져오기
           const bookResponse = await fetch(`/api/books/${bookId}`);
           if (!bookResponse.ok) {
             throw new Error('Failed to fetch book data');
@@ -27,17 +36,17 @@ export default function NewMeetingPage() {
           setError(
             error instanceof Error
               ? error.message
-              : '책 정보를 가져오는데 실패했습니다.'
+              : '모임 정보를 가져오는데 실패했습니다.'
           );
         } finally {
           setLoading(false);
         }
       };
-      fetchBook();
+      fetchMeetingAndBook();
     } else {
-      router.push('/books');
+      router.push('/meetings');
     }
-  }, [bookId, router]);
+  }, [meetingId, router]);
 
   if (loading) {
     return (
@@ -63,7 +72,7 @@ export default function NewMeetingPage() {
   if (book) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <MeetingEditAndCreation book={book} />
+        <MeetingEditAndCreation book={book} meetingId={meetingId} />
       </div>
     );
   }
