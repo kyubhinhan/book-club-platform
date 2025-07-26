@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { Meeting } from '@/types/meeting';
 import Image from 'next/image';
+import { useSession } from 'next-auth/react';
 import {
   CalendarToday as CalendarIcon,
   AccessTime as TimeIcon,
@@ -12,12 +13,14 @@ import {
   Book as BookIcon,
   Description as DescriptionIcon,
   QuestionAnswer as QuestionIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 
 export default function MeetingDetail({ meetingId }: { meetingId: string }) {
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { data: session } = useSession();
 
   const fetchMeetingDetails = useCallback(async () => {
     try {
@@ -41,6 +44,12 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
   useEffect(() => {
     fetchMeetingDetails();
   }, [fetchMeetingDetails, meetingId]);
+
+  // 현재 사용자가 모임 생성자인지 확인
+  const isCreator =
+    session?.user &&
+    'id' in session.user &&
+    session.user.id === meeting?.creatorId;
 
   if (loading) {
     return (
@@ -298,13 +307,24 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
         </div>
 
         {/* 하단 버튼 */}
-        <div className="mt-8 flex justify-center">
+        <div className="mt-8 flex justify-center gap-4">
           <button
             onClick={() => (window.location.href = '/meetings')}
             className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
           >
             목록으로 돌아가기
           </button>
+          {isCreator && (
+            <button
+              onClick={() =>
+                (window.location.href = `/meetings/${meetingId}/edit`)
+              }
+              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <EditIcon className="text-sm" />
+              수정하기
+            </button>
+          )}
         </div>
       </div>
     </div>
