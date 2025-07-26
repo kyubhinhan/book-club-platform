@@ -11,7 +11,6 @@ import {
   Group as GroupIcon,
   Person as PersonIcon,
   Book as BookIcon,
-  Description as DescriptionIcon,
   QuestionAnswer as QuestionIcon,
   Edit as EditIcon,
 } from '@mui/icons-material';
@@ -144,48 +143,32 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
                     <p className="font-medium">{meeting.maxParticipants}명</p>
                   </div>
                 </div>
-              </div>
-
-              {/* 모임 소개 */}
-              {meeting.description && (
-                <div className="border-t pt-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <DescriptionIcon className="text-blue-600" />
-                    <h3 className="font-medium text-gray-900">모임 소개</h3>
-                  </div>
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                    {meeting.description}
-                  </p>
-                </div>
-              )}
-
-              {/* 생성자 정보 */}
-              <div className="border-t pt-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <PersonIcon className="text-blue-600" />
-                  <h3 className="font-medium text-gray-900">모임 생성자</h3>
-                </div>
                 <div className="flex items-center gap-3">
-                  {meeting.creator.image ? (
-                    <Image
-                      src={meeting.creator.image}
-                      alt={meeting.creator.name || '생성자'}
-                      width={40}
-                      height={40}
-                      className="rounded-full"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <PersonIcon className="text-blue-600 text-sm" />
-                    </div>
-                  )}
+                  <PersonIcon className="text-blue-600" />
                   <div>
+                    <p className="text-sm text-gray-500">모임 생성자</p>
                     <p className="font-medium text-gray-900">
                       {meeting.creator.name || '알 수 없음'}
                     </p>
                   </div>
                 </div>
               </div>
+
+              {/* 모임 소개 */}
+              {meeting.description && (
+                <div className="mt-6">
+                  <div className="bg-gray-50 rounded-lg p-5">
+                    <div>
+                      <h3 className="font-medium text-gray-900 mb-2">
+                        모임 소개
+                      </h3>
+                      <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                        {meeting.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -234,12 +217,11 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
                     )}
                   </div>
 
-                  {/* 추천 이유 */}
+                  {/* 선정 이유 */}
                   <div className="mt-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-blue-600 text-lg">💡</span>
-                      <h4 className="font-medium text-gray-900">추천 이유</h4>
-                    </div>
+                    <h4 className="font-medium text-gray-900 mb-3">
+                      선정 이유
+                    </h4>
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <p className="text-gray-700 leading-relaxed whitespace-pre-line">
                         {meeting.recommendationReason}
