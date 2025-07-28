@@ -423,6 +423,11 @@ export default function MeetingEditAndCreation({
     setMeetingImage(imageUrl);
   };
 
+  // 모임 이미지 제거 처리
+  const handleRemoveImage = () => {
+    setMeetingImage(null);
+  };
+
   // Daum Postcode 인스턴스 생성 (다이얼로그가 열릴 때마다)
   useEffect(() => {
     if (!addressDialogOpen || !isScriptLoaded) return;
@@ -654,7 +659,9 @@ export default function MeetingEditAndCreation({
                       onChange={handleMeetingImageUpload}
                       className="hidden"
                     />
-                    <div className="relative h-[200px]">
+                    <div
+                      className={`relative ${meetingImage ? 'h-[160px]' : 'h-[200px]'}`}
+                    >
                       {meetingImage ? (
                         <div className="relative group h-full">
                           <Image
@@ -680,6 +687,18 @@ export default function MeetingEditAndCreation({
                       )}
                     </div>
                   </label>
+
+                  {/* 이미지 제거 버튼 */}
+                  {meetingImage && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="w-full mt-2 px-3 py-1 text-sm text-red-600 border border-red-300 rounded-md hover:bg-red-50 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <DeleteIcon className="text-sm" />
+                      이미지 제거하기
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex-1 flex flex-col gap-4">
