@@ -87,6 +87,7 @@ model Meeting {
   endTime           String            // HH:mm format
   recommendationReason String
   range             String?
+  imageUrl          String?           // 모임 관련 이미지 URL
   bookId            String
   book              Book              @relation(fields: [bookId], references: [id])
   clubId            String?           // 선택적으로 변경

@@ -39,6 +39,7 @@ export interface Meeting {
   endTime: string;
   recommendationReason: string;
   range: string | null;
+  imageUrl: string | null;
   bookId: string;
   book: Book;
   clubId: string | null;

@@ -13,12 +13,14 @@ import {
   Book as BookIcon,
   QuestionAnswer as QuestionIcon,
   Edit as EditIcon,
+  PhotoCamera as PhotoCameraIcon,
 } from '@mui/icons-material';
 
 export default function MeetingDetail({ meetingId }: { meetingId: string }) {
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const { data: session } = useSession();
 
   const fetchMeetingDetails = useCallback(async () => {
@@ -49,6 +51,53 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
     session?.user &&
     'id' in session.user &&
     session.user.id === meeting?.creatorId;
+
+  // 이미지 업로드 처리
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file || !meeting) return;
+
+    // 파일 타입 검증
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드 가능합니다.');
+      return;
+    }
+
+    // 파일 크기 검증 (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('파일 크기는 5MB 이하여야 합니다.');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch(`/api/meetings/${meetingId}/image`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        // 모임 정보 업데이트
+        setMeeting((prev) =>
+          prev ? { ...prev, imageUrl: result.imageUrl } : null
+        );
+        alert('이미지가 성공적으로 업로드되었습니다.');
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || '이미지 업로드에 실패했습니다.');
+      }
+    } catch (error) {
+      alert('이미지 업로드 중 오류가 발생했습니다.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -88,10 +137,65 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* 헤더 */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            {meeting.title}
-          </h1>
-          <p className="text-lg text-gray-600">독서 모임 상세 정보</p>
+          <div className="flex flex-col md:flex-row gap-6 items-start">
+            {/* 모임 이미지 */}
+            <div className="relative">
+              {meeting.imageUrl ? (
+                <div className="relative">
+                  <Image
+                    src={meeting.imageUrl}
+                    alt={meeting.title}
+                    width={300}
+                    height={200}
+                    className="rounded-lg shadow-md object-cover"
+                  />
+                  {isCreator && (
+                    <label className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md cursor-pointer hover:bg-gray-50 transition-colors">
+                      <PhotoCameraIcon className="text-gray-600" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        disabled={uploadingImage}
+                      />
+                    </label>
+                  )}
+                </div>
+              ) : (
+                <div className="w-[300px] h-[200px] bg-gray-200 rounded-lg flex items-center justify-center relative">
+                  {isCreator ? (
+                    <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer hover:bg-gray-300 transition-colors">
+                      <PhotoCameraIcon className="text-gray-400 text-4xl mb-2" />
+                      <span className="text-gray-500 text-sm">이미지 추가</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        disabled={uploadingImage}
+                      />
+                    </label>
+                  ) : (
+                    <PhotoCameraIcon className="text-gray-400 text-4xl" />
+                  )}
+                </div>
+              )}
+              {uploadingImage && (
+                <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                </div>
+              )}
+            </div>
+
+            {/* 모임 제목 및 정보 */}
+            <div className="flex-1">
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                {meeting.title}
+              </h1>
+              <p className="text-lg text-gray-600">독서 모임 상세 정보</p>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-6">

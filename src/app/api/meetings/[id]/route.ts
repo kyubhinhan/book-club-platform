@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 import { Session } from 'next-auth';
+import { deleteCloudinaryImageByUrl } from '@/lib/cloudinary';
 
 export async function GET(
   request: NextRequest,
@@ -74,6 +75,9 @@ export async function PUT(
     const meetingId = params.id;
     const formData = await request.formData();
 
+    // 폼 데이터에서 currentImageUrl 추출
+    const currentImageUrl = formData.get('currentImageUrl') as string;
+
     // 기존 모임 확인
     const existingMeeting = await prisma.meeting.findUnique({
       where: { id: meetingId },
@@ -96,6 +100,12 @@ export async function PUT(
         { error: '모임을 수정할 권한이 없습니다.' },
         { status: 403 }
       );
+    }
+
+    // 이미지가 변경되었거나 삭제된 경우 기존 이미지 삭제
+    const imageChanged = existingMeeting.imageUrl !== currentImageUrl;
+    if (imageChanged && existingMeeting.imageUrl) {
+      await deleteCloudinaryImageByUrl(existingMeeting.imageUrl);
     }
 
     // 폼 데이터 추출
@@ -125,6 +135,8 @@ export async function PUT(
         detailedAddress,
         recommendationReason,
         range,
+        // 이미지가 변경된 경우 currentImageUrl로 설정 (null이면 삭제됨)
+        ...(imageChanged && { imageUrl: currentImageUrl || null }),
       },
     });
 
@@ -191,21 +203,26 @@ export async function DELETE(
     }
 
     // 관련 데이터 삭제 (순서 중요: 외래키 제약조건 때문)
-    // 1. 첨부파일 삭제
+    // 1. Cloudinary 이미지 삭제
+    if (existingMeeting.imageUrl) {
+      await deleteCloudinaryImageByUrl(existingMeeting.imageUrl);
+    }
+
+    // 2. 첨부파일 삭제
     if (existingMeeting.attachments.length > 0) {
       await prisma.attachment.deleteMany({
         where: { meetingId: meetingId },
       });
     }
 
-    // 2. 발제문 삭제
+    // 3. 발제문 삭제
     if (existingMeeting.discussion) {
       await prisma.discussion.delete({
         where: { id: existingMeeting.discussion.id },
       });
     }
 
-    // 3. 모임 삭제
+    // 4. 모임 삭제
     await prisma.meeting.delete({
       where: { id: meetingId },
     });

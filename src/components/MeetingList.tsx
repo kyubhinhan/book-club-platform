@@ -118,12 +118,6 @@ export default function MeetingList() {
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">내가 만든 모임</h2>
-        <a
-          href="/books"
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          새 모임 만들기
-        </a>
       </div>
 
       <div className="grid gap-4">

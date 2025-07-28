@@ -22,6 +22,7 @@ import {
   CloudUpload as CloudUploadIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  PhotoCamera as PhotoCameraIcon,
 } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
@@ -71,6 +72,7 @@ export default function MeetingEditAndCreation({
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [meetingImage, setMeetingImage] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const currentDate = new Date();
@@ -126,6 +128,11 @@ export default function MeetingEditAndCreation({
             // 발제문 설정
             if (meeting.discussion) {
               setQuestions(meeting.discussion.questions);
+            }
+
+            // 모임 이미지 설정
+            if (meeting.imageUrl) {
+              setMeetingImage(meeting.imageUrl);
             }
           }
         } catch (error) {
@@ -231,6 +238,11 @@ export default function MeetingEditAndCreation({
         // 수정 모드
         formData.append('meetingId', meetingId);
 
+        // 현재 이미지 상태를 전송 (기존 URL 또는 blob URL)
+        if (meetingImage) {
+          formData.append('currentImageUrl', meetingImage);
+        }
+
         const response = await fetch(`/api/meetings/${meetingId}`, {
           method: 'PUT',
           body: formData,
@@ -238,6 +250,31 @@ export default function MeetingEditAndCreation({
 
         if (!response.ok) {
           throw new Error('Failed to update meeting');
+        }
+
+        // 수정 모드에서도 이미지가 있으면 업로드
+        if (meetingImage && meetingImage.startsWith('blob:')) {
+          // blob URL에서 파일 추출
+          const imageResponse = await fetch(meetingImage);
+          const blob = await imageResponse.blob();
+          const file = new File([blob], 'meeting-image.jpg', {
+            type: blob.type,
+          });
+
+          const imageFormData = new FormData();
+          imageFormData.append('image', file);
+
+          const imageUploadResponse = await fetch(
+            `/api/meetings/${meetingId}/image`,
+            {
+              method: 'POST',
+              body: imageFormData,
+            }
+          );
+
+          if (!imageUploadResponse.ok) {
+            console.warn('Image upload failed, but meeting was updated');
+          }
         }
 
         router.push(`/meetings/${meetingId}`);
@@ -255,7 +292,32 @@ export default function MeetingEditAndCreation({
         const meetingResult = await meetingResponse.json();
         const newMeetingId = meetingResult.meeting.id;
 
-        // 2. 파일이 있으면 별도로 업로드
+        // 2. 모임 이미지가 있으면 업로드
+        if (meetingImage && meetingImage.startsWith('blob:')) {
+          // blob URL에서 파일 추출
+          const response = await fetch(meetingImage);
+          const blob = await response.blob();
+          const file = new File([blob], 'meeting-image.jpg', {
+            type: blob.type,
+          });
+
+          const imageFormData = new FormData();
+          imageFormData.append('image', file);
+
+          const imageResponse = await fetch(
+            `/api/meetings/${newMeetingId}/image`,
+            {
+              method: 'POST',
+              body: imageFormData,
+            }
+          );
+
+          if (!imageResponse.ok) {
+            console.warn('Image upload failed, but meeting was created');
+          }
+        }
+
+        // 3. 첨부파일이 있으면 별도로 업로드
         if (attachments.length > 0) {
           const fileFormData = new FormData();
           fileFormData.append('meetingId', newMeetingId);
@@ -335,6 +397,30 @@ export default function MeetingEditAndCreation({
       setIsDeleting(false);
       setDeleteDialogOpen(false);
     }
+  };
+
+  // 모임 이미지 업로드 처리
+  const handleMeetingImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // 파일 타입 검증
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드 가능합니다.');
+      return;
+    }
+
+    // 파일 크기 검증 (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('파일 크기는 5MB 이하여야 합니다.');
+      return;
+    }
+
+    // 모든 모드에서 미리보기용으로만 저장
+    const imageUrl = URL.createObjectURL(file);
+    setMeetingImage(imageUrl);
   };
 
   // Daum Postcode 인스턴스 생성 (다이얼로그가 열릴 때마다)
@@ -474,6 +560,7 @@ export default function MeetingEditAndCreation({
             </div>
           </AccordionDetails>
         </Accordion>
+
         {/* 토론 질문 섹션 */}
         <Accordion
           className="shadow-md rounded-xl overflow-hidden"
@@ -556,27 +643,71 @@ export default function MeetingEditAndCreation({
               onSubmit={handleSubmit(onSubmit)}
               className="flex flex-col gap-5"
             >
-              <TextField
-                fullWidth
-                label="모임 제목"
-                {...register('title', { required: '모임 제목은 필수입니다' })}
-                error={!!errors.title}
-                helperText={errors.title?.message}
-                placeholder="모임의 제목을 입력해주세요"
-              />
+              <div className="flex gap-4 items-start">
+                {/* 모임 이미지 업로드 */}
+                <div className="w-48">
+                  {/* 이미지 업로드 영역 */}
+                  <label className="cursor-pointer block">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleMeetingImageUpload}
+                      className="hidden"
+                    />
+                    <div className="relative h-[200px]">
+                      {meetingImage ? (
+                        <div className="relative group h-full">
+                          <Image
+                            src={meetingImage}
+                            alt="모임 이미지"
+                            fill
+                            className="rounded-lg shadow-md object-cover transition-opacity group-hover:opacity-80"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-lg flex items-center justify-center transition-all">
+                            <PhotoCameraIcon className="text-white opacity-0 group-hover:opacity-100 text-2xl transition-opacity" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 rounded-lg flex flex-col items-center justify-center hover:bg-gray-300 transition-colors">
+                          <PhotoCameraIcon className="text-gray-400 text-2xl mb-1" />
+                          <span className="text-gray-500 text-xs">
+                            클릭하여 이미지 추가
+                          </span>
+                          <span className="text-gray-400 text-xs mt-1">
+                            JPG, PNG, GIF (최대 5MB)
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                </div>
 
-              <TextField
-                fullWidth
-                label="모임 소개"
-                multiline
-                rows={4}
-                {...register('description', {
-                  required: '모임 소개는 필수입니다',
-                })}
-                helperText={errors.description?.message}
-                error={!!errors.description}
-                placeholder="모임에 대해 소개해주세요"
-              />
+                <div className="flex-1 flex flex-col gap-4">
+                  <TextField
+                    fullWidth
+                    label="모임 제목"
+                    {...register('title', {
+                      required: '모임 제목은 필수입니다',
+                    })}
+                    error={!!errors.title}
+                    helperText={errors.title?.message}
+                    placeholder="모임의 제목을 입력해주세요"
+                  />
+
+                  <TextField
+                    fullWidth
+                    label="모임 소개"
+                    multiline
+                    rows={4}
+                    {...register('description', {
+                      required: '모임 소개는 필수입니다',
+                    })}
+                    helperText={errors.description?.message}
+                    error={!!errors.description}
+                    placeholder="모임에 대해 소개해주세요"
+                  />
+                </div>
+              </div>
 
               <TextField
                 fullWidth
