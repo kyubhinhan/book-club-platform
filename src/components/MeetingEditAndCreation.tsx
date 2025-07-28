@@ -236,7 +236,6 @@ export default function MeetingEditAndCreation({
           throw new Error('Failed to update meeting');
         }
 
-        const result = await response.json();
         router.push(`/meetings/${meetingId}`);
       } else {
         // 생성 모드
