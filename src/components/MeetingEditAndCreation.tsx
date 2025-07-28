@@ -20,6 +20,8 @@ import {
 import {
   ExpandMore as ExpandMoreIcon,
   CloudUpload as CloudUploadIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
@@ -65,8 +67,10 @@ export default function MeetingEditAndCreation({
   const [loadingMeeting, setLoadingMeeting] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [addressDialogOpen, setAddressDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const currentDate = new Date();
@@ -306,6 +310,31 @@ export default function MeetingEditAndCreation({
   // 주소 검색 다이얼로그 열기
   const openAddressSearch = () => {
     setAddressDialogOpen(true);
+  };
+
+  // 모임 삭제 처리
+  const handleDeleteMeeting = async () => {
+    if (!meetingId) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/meetings/${meetingId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        router.push('/meetings');
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || '모임 삭제에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Error deleting meeting:', error);
+      alert('모임 삭제 중 오류가 발생했습니다.');
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+    }
   };
 
   // Daum Postcode 인스턴스 생성 (다이얼로그가 열릴 때마다)
@@ -728,15 +757,41 @@ export default function MeetingEditAndCreation({
                 )}
               </div>
 
-              <Button
-                type="submit"
-                variant="contained"
-                fullWidth
-                disabled={Object.keys(errors).length > 0}
-                className="bg-primary-600 hover:bg-primary-700 py-3 text-lg"
-              >
-                {isEditMode ? '모임 수정하기' : '모임 생성하기'}
-              </Button>
+              <div className="space-y-3">
+                {isEditMode ? (
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      startIcon={<DeleteIcon />}
+                      onClick={() => setDeleteDialogOpen(true)}
+                      className="flex-1 py-3 text-lg"
+                    >
+                      모임 삭제하기
+                    </Button>
+
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      startIcon={<EditIcon />}
+                      disabled={Object.keys(errors).length > 0}
+                      className="flex-1 bg-primary-600 hover:bg-primary-700 py-3 text-lg"
+                    >
+                      모임 수정하기
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    fullWidth
+                    disabled={Object.keys(errors).length > 0}
+                    className="bg-primary-600 hover:bg-primary-700 py-3 text-lg"
+                  >
+                    모임 생성하기
+                  </Button>
+                )}
+              </div>
             </Box>
           </div>
         </div>
@@ -755,6 +810,32 @@ export default function MeetingEditAndCreation({
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setAddressDialogOpen(false)}>취소</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 모임 삭제 확인 다이얼로그 */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>모임 삭제 확인</DialogTitle>
+        <DialogContent>
+          <Typography>
+            정말로 이 모임을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>취소</Button>
+          <Button
+            onClick={handleDeleteMeeting}
+            color="error"
+            variant="contained"
+            disabled={isDeleting}
+          >
+            {isDeleting ? '삭제 중...' : '삭제'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

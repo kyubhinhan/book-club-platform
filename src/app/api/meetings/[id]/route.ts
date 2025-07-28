@@ -147,3 +147,75 @@ export async function PUT(
     );
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = (await getServerSession(
+      authOptions as any
+    )) as Session | null;
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: '로그인이 필요합니다.' },
+        { status: 401 }
+      );
+    }
+
+    const meetingId = params.id;
+
+    // 기존 모임 확인
+    const existingMeeting = await prisma.meeting.findUnique({
+      where: { id: meetingId },
+      include: {
+        creator: true,
+        discussion: true,
+        attachments: true,
+      },
+    });
+
+    if (!existingMeeting) {
+      return NextResponse.json(
+        { error: '모임을 찾을 수 없습니다.' },
+        { status: 404 }
+      );
+    }
+
+    // 생성자만 삭제 가능
+    if (existingMeeting.creatorId !== session.user.id) {
+      return NextResponse.json(
+        { error: '모임을 삭제할 권한이 없습니다.' },
+        { status: 403 }
+      );
+    }
+
+    // 관련 데이터 삭제 (순서 중요: 외래키 제약조건 때문)
+    // 1. 첨부파일 삭제
+    if (existingMeeting.attachments.length > 0) {
+      await prisma.attachment.deleteMany({
+        where: { meetingId: meetingId },
+      });
+    }
+
+    // 2. 발제문 삭제
+    if (existingMeeting.discussion) {
+      await prisma.discussion.delete({
+        where: { id: existingMeeting.discussion.id },
+      });
+    }
+
+    // 3. 모임 삭제
+    await prisma.meeting.delete({
+      where: { id: meetingId },
+    });
+
+    return NextResponse.json({ message: '모임이 성공적으로 삭제되었습니다.' });
+  } catch (error) {
+    console.error('Error deleting meeting:', error);
+    return NextResponse.json(
+      { error: '모임 삭제에 실패했습니다.' },
+      { status: 500 }
+    );
+  }
+}
