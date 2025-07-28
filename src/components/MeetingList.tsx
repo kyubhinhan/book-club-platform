@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { Meeting } from '@/types/meeting';
+import Image from 'next/image';
+import { Image as ImageIcon } from '@mui/icons-material';
 
 export default function MeetingList() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -127,32 +129,64 @@ export default function MeetingList() {
             href={`/meetings/${meeting.id}`}
             className="block p-6 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
           >
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {meeting.title}
-                </h3>
-                <div className="space-y-1 text-sm text-gray-600">
-                  <p>
-                    📚 {meeting.book.title} (저자: {meeting.book.author})
-                  </p>
-                  <p>📍 {meeting.address}</p>
-                  {meeting.detailedAddress && (
-                    <p className="text-gray-500"> {meeting.detailedAddress}</p>
-                  )}
-                  <p>👥 최대 {meeting.maxParticipants}명</p>
-                </div>
+            <div className="flex gap-4 items-center">
+              {/* 모임 이미지 */}
+              <div className="flex-shrink-0 w-24 h-24 relative">
+                {meeting.imageUrl ? (
+                  <Image
+                    src={meeting.imageUrl}
+                    alt={meeting.title}
+                    fill
+                    className="rounded-lg object-cover"
+                  />
+                ) : meeting.book.imageUrl ? (
+                  <Image
+                    src={meeting.book.imageUrl}
+                    alt={meeting.book.title}
+                    fill
+                    className="rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full border-2 border-gray-200 rounded-lg flex flex-col items-center justify-center">
+                    <ImageIcon className="text-gray-400 text-lg mb-1" />
+                    <span className="text-gray-400 text-xs">이미지</span>
+                  </div>
+                )}
               </div>
-              <div className="text-right ml-4">
-                <p className="text-sm font-medium text-gray-900">
-                  {format(new Date(meeting.meetingDate), 'M월 d일')}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {meeting.startTime} - {meeting.endTime}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {format(new Date(meeting.meetingDate), 'EEEE')}
-                </p>
+
+              {/* 모임 정보 */}
+              <div className="flex-1">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      {meeting.title}
+                    </h3>
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <p>
+                        📚 {meeting.book.title} (저자: {meeting.book.author})
+                      </p>
+                      <p>📍 {meeting.address}</p>
+                      {meeting.detailedAddress && (
+                        <p className="text-gray-500">
+                          {' '}
+                          {meeting.detailedAddress}
+                        </p>
+                      )}
+                      <p>👥 최대 {meeting.maxParticipants}명</p>
+                    </div>
+                  </div>
+                  <div className="text-right ml-4">
+                    <p className="text-sm font-medium text-gray-900">
+                      {format(new Date(meeting.meetingDate), 'M월 d일')}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {meeting.startTime} - {meeting.endTime}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {format(new Date(meeting.meetingDate), 'EEEE')}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </a>
