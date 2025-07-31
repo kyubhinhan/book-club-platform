@@ -1,22 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import {
-  FormControl,
-  Select,
-  MenuItem,
-  Button,
-  Typography,
-  Box,
-  Container,
-  Alert,
-  SelectChangeEvent,
-} from '@mui/material';
-import { BookRecommendationManager } from '@/utils/book';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Button, Typography, Box, Container, Alert } from '@mui/material';
 import type { BookWithSummary } from './BookCard';
 import BookCard from './BookCard';
 import LoadingBookCard from './LoadingBookCard';
-import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
 interface Category {
@@ -37,14 +25,18 @@ const categories: Category[] = [
 ];
 
 export default function BookRecommendation() {
-  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [recommendedBooks, setRecommendedBooks] = useState<BookWithSummary[]>(
     []
   );
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
-  const { handleSubmit, setValue, watch } = useForm<RecommendationFormData>({
+  const loadingRef = useRef<HTMLDivElement>(null);
+  const isInitialLoadRef = useRef(false);
+
+  const { setValue, watch } = useForm<RecommendationFormData>({
     defaultValues: {
       category: categories[0],
     },
@@ -52,128 +44,122 @@ export default function BookRecommendation() {
 
   const selectedCategory = watch('category');
 
+  // 컴포넌트 마운트 시 초기 책 목록 로드
   useEffect(() => {
-    const shouldRestoreState = searchParams?.get('restoreState') === 'true';
+    // 이미 초기 로딩이 완료되었으면 스킵
+    if (isInitialLoadRef.current) return;
 
-    if (shouldRestoreState) {
-      const savedBookIds = BookRecommendationManager.getState();
-      if (savedBookIds.length > 0) {
-        fetchBooksByIds(savedBookIds);
+    isInitialLoadRef.current = true;
+    loadBooksByCategory(selectedCategory.id, 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 빈 의존성 배열로 마운트 시에만 실행
+
+  const loadBooksByCategory = useCallback(
+    async (categoryId: string, pageNum: number) => {
+      const isInitialLoad = pageNum === 1;
+
+      if (isInitialLoad) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
       }
-    }
-  }, [searchParams]);
+      setError(null);
 
-  const fetchBooksByIds = async (bookIds: string[]) => {
-    setLoading(true);
-    setError(null);
+      try {
+        const response = await fetch(
+          `/api/books?category=${categoryId}&page=${pageNum}&limit=10`
+        );
 
-    try {
-      const response = await fetch('/api/books/getByIds', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: bookIds }),
-      });
+        if (!response.ok) throw new Error('책 목록 조회에 실패했습니다.');
 
-      if (!response.ok) throw new Error('책 정보 조회에 실패했습니다.');
+        const data = await response.json();
+        const newBooks: BookWithSummary[] = data.books || [];
 
-      const data = await response.json();
-      setRecommendedBooks(data.books);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
-      );
-    } finally {
-      setLoading(false);
-    }
+        setRecommendedBooks((prev) => [...prev, ...newBooks]);
+
+        setPage(pageNum);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
+        );
+      } finally {
+        if (isInitialLoad) {
+          setLoading(false);
+        } else {
+          setLoadingMore(false);
+        }
+      }
+    },
+    [setLoading, setLoadingMore, setError, setRecommendedBooks, setPage]
+  );
+
+  const handleCategorySelect = async (category: Category) => {
+    setValue('category', category);
+
+    setRecommendedBooks([]);
+    setPage(1);
+    loadBooksByCategory(category.id, 1);
   };
 
-  const onSubmit = async () => {
-    setLoading(true);
-    setError(null);
+  // Intersection Observer 설정
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loadingMore && !loading) {
+          const nextPage = page + 1;
+          loadBooksByCategory(selectedCategory.id, nextPage);
+        }
+      },
+      { threshold: 0.1 }
+    );
 
-    try {
-      const response = await fetch('/api/books/recommend', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category: selectedCategory.id,
-          count: 5,
-        }),
-      });
-
-      if (!response.ok) throw new Error('책 추천에 실패했습니다.');
-
-      const data = await response.json();
-      const books: BookWithSummary[] = data.books;
-      setRecommendedBooks(books);
-
-      BookRecommendationManager.saveState(books.map((book) => book.id));
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
-      );
-    } finally {
-      setLoading(false);
+    if (loadingRef.current) {
+      observer.observe(loadingRef.current);
     }
-  };
 
-  const handleCategoryChange = (event: SelectChangeEvent<string>) => {
-    const selectedId = event.target.value;
-    const category = categories.find((cat) => cat.id === selectedId);
-    if (category) {
-      setValue('category', category);
-    }
-  };
+    return () => {
+      observer.disconnect();
+    };
+  }, [loadingMore, loading, page, selectedCategory, loadBooksByCategory]);
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      <Typography
-        variant="h4"
-        component="h1"
-        sx={{ mb: 4, fontSize: { xs: '1.75rem', sm: '2rem' } }}
-      >
-        AI 도서 추천
-      </Typography>
-
-      <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <FormControl sx={{ flexGrow: 1 }}>
-            <Select
-              value={selectedCategory.id}
-              onChange={handleCategoryChange}
-              size="small"
-              sx={{
-                '& .MuiSelect-select': {
-                  display: 'flex',
-                  alignItems: 'center',
-                  py: 1.5,
-                },
-              }}
-            >
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* 카테고리 선택 버튼 그룹 */}
+          <Box>
+            <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+              카테고리 선택
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               {categories.map((category) => (
-                <MenuItem
+                <Button
                   key={category.id}
-                  value={category.id}
+                  onClick={() => handleCategorySelect(category)}
+                  variant={
+                    selectedCategory.id === category.id
+                      ? 'contained'
+                      : 'outlined'
+                  }
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
+                    gap: 1,
+                    py: 1,
+                    px: 2,
+                    fontSize: '0.8rem',
+                    fontWeight: selectedCategory.id === category.id ? 600 : 400,
+                    borderRadius: '16px',
+                    minWidth: '100px',
+                    flex: 1,
                   }}
                 >
-                  <span style={{ marginRight: '8px' }}>{category.emoji}</span>
+                  <span>{category.emoji}</span>
                   {category.name}
-                </MenuItem>
+                </Button>
               ))}
-            </Select>
-          </FormControl>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={loading}
-            size="small"
-            sx={{ px: 3 }}
-          >
-            {loading ? '추천 중...' : '추천 받기'}
-          </Button>
+            </Box>
+          </Box>
         </Box>
       </Box>
 
@@ -191,7 +177,7 @@ export default function BookRecommendation() {
         </Box>
       )}
 
-      {!loading && recommendedBooks.length > 0 && (
+      {!loading && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {recommendedBooks.map((book) => (
             <BookCard
@@ -200,6 +186,20 @@ export default function BookRecommendation() {
               currentBooks={recommendedBooks}
             />
           ))}
+
+          {/* 무한 스크롤 로딩 인디케이터 */}
+          <Box
+            ref={loadingRef}
+            sx={{ py: 2, textAlign: 'center', minHeight: '100px' }}
+          >
+            {loadingMore ? (
+              <LoadingBookCard />
+            ) : (
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                스크롤하여 더 많은 책을 불러오세요
+              </Typography>
+            )}
+          </Box>
         </Box>
       )}
     </Container>
