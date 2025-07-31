@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button, Typography, Box, Container, Alert } from '@mui/material';
 import type { BookWithSummary } from './BookCard';
 import BookCard from './BookCard';
@@ -26,14 +26,12 @@ const categories: Category[] = [
 
 export default function BookRecommendation() {
   const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadingAi, setLoadingAi] = useState(false);
   const [recommendedBooks, setRecommendedBooks] = useState<BookWithSummary[]>(
     []
   );
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
 
-  const loadingRef = useRef<HTMLDivElement>(null);
   const isInitialLoadRef = useRef(false);
 
   const { setValue, watch } = useForm<RecommendationFormData>({
@@ -50,84 +48,86 @@ export default function BookRecommendation() {
     if (isInitialLoadRef.current) return;
 
     isInitialLoadRef.current = true;
-    loadBooksByCategory(selectedCategory.id, 1);
+    loadBooksByCategory(selectedCategory.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 빈 의존성 배열로 마운트 시에만 실행
 
-  const loadBooksByCategory = useCallback(
-    async (categoryId: string, pageNum: number) => {
-      const isInitialLoad = pageNum === 1;
+  const loadBooksByCategory = async (categoryId: string) => {
+    setLoading(true);
+    setError(null);
 
-      if (isInitialLoad) {
-        setLoading(true);
-      } else {
-        setLoadingMore(true);
-      }
-      setError(null);
+    try {
+      // DB에서 기존 책들을 가져옴
+      const dbResponse = await fetch(`/api/books?category=${categoryId}`);
 
-      try {
-        const response = await fetch(
-          `/api/books?category=${categoryId}&page=${pageNum}&limit=10`
-        );
+      if (!dbResponse.ok) throw new Error('책 목록 조회에 실패했습니다.');
 
-        if (!response.ok) throw new Error('책 목록 조회에 실패했습니다.');
+      const dbData = await dbResponse.json();
+      const books: BookWithSummary[] = dbData.books || [];
 
-        const data = await response.json();
-        const newBooks: BookWithSummary[] = data.books || [];
+      setRecommendedBooks(books);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        setRecommendedBooks((prev) => [...prev, ...newBooks]);
+  const loadAiRecommendations = async (categoryId: string) => {
+    setLoadingAi(true);
+    setError(null);
 
-        setPage(pageNum);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
-        );
-      } finally {
-        if (isInitialLoad) {
-          setLoading(false);
-        } else {
-          setLoadingMore(false);
-        }
-      }
-    },
-    [setLoading, setLoadingMore, setError, setRecommendedBooks, setPage]
-  );
+    try {
+      const aiResponse = await fetch('/api/books/recommend', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          category: categoryId,
+          count: 10,
+        }),
+      });
+
+      if (!aiResponse.ok) throw new Error('AI 추천 생성에 실패했습니다.');
+
+      const aiData = await aiResponse.json();
+      const aiBooks: BookWithSummary[] = aiData.books || [];
+
+      setRecommendedBooks(aiBooks);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'AI 추천 생성 중 오류가 발생했습니다.'
+      );
+    } finally {
+      setLoadingAi(false);
+    }
+  };
 
   const handleCategorySelect = async (category: Category) => {
     setValue('category', category);
 
     setRecommendedBooks([]);
-    setPage(1);
-    loadBooksByCategory(category.id, 1);
+    loadBooksByCategory(category.id);
   };
-
-  // Intersection Observer 설정
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !loadingMore && !loading) {
-          const nextPage = page + 1;
-          loadBooksByCategory(selectedCategory.id, nextPage);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (loadingRef.current) {
-      observer.observe(loadingRef.current);
-    }
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [loadingMore, loading, page, selectedCategory, loadBooksByCategory]);
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            mb: 2,
+          }}
+        >
           {/* 카테고리 선택 버튼 그룹 */}
-          <Box>
+          <Box sx={{ flex: 1 }}>
             <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
               카테고리 선택
             </Typography>
@@ -160,6 +160,26 @@ export default function BookRecommendation() {
               ))}
             </Box>
           </Box>
+
+          {/* AI 추천 버튼 - 오른쪽 상단 */}
+          <Button
+            onClick={() => loadAiRecommendations(selectedCategory.id)}
+            disabled={loadingAi}
+            variant="outlined"
+            size="small"
+            startIcon={loadingAi ? <div>⏳</div> : <div>🤖</div>}
+            sx={{
+              py: 0.5,
+              px: 1.5,
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              borderRadius: '8px',
+              minWidth: 'auto',
+              ml: 2,
+            }}
+          >
+            {loadingAi ? '생성 중...' : 'AI 추천'}
+          </Button>
         </Box>
       </Box>
 
@@ -186,20 +206,6 @@ export default function BookRecommendation() {
               currentBooks={recommendedBooks}
             />
           ))}
-
-          {/* 무한 스크롤 로딩 인디케이터 */}
-          <Box
-            ref={loadingRef}
-            sx={{ py: 2, textAlign: 'center', minHeight: '100px' }}
-          >
-            {loadingMore ? (
-              <LoadingBookCard />
-            ) : (
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                스크롤하여 더 많은 책을 불러오세요
-              </Typography>
-            )}
-          </Box>
         </Box>
       )}
     </Container>

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { generateBookRecommendations } from '@/lib/openai';
 import { prisma } from '@/lib/prisma';
+import { generateBookRecommendations } from '@/lib/openai';
 import { searchBookByTitleAndAuthor } from '@/lib/books';
 
 interface BookRecommendation {
@@ -91,118 +91,63 @@ async function findOrFetchBook(
   });
 }
 
-async function getRandomBooksFromDB(
-  category: string,
-  count: number,
-  excludeIds: string[]
-) {
-  return await prisma.book.findMany({
-    where: {
-      category,
-      id: {
-        notIn: excludeIds,
-      },
-    },
-    orderBy: {
-      id: 'desc',
-    },
-    take: count,
-  });
-}
-
 export async function POST(request: Request) {
   try {
-    const { category, count = 5 } = await request.json();
+    const { category, count = 10 } = await request.json();
 
     if (!category) {
       return NextResponse.json(
-        { error: '카테고리는 필수 입력값입니다.' },
+        { error: 'Category is required' },
         { status: 400 }
       );
     }
 
-    const validBooks = [];
-    let attempts = 0;
-    const maxAttempts = 3;
-    const addedBookIds = new Set<string>(); // 명시적으로 string 타입 지정
+    // AI 추천 생성
+    const recommendationsText = await generateBookRecommendations(
+      category,
+      count + 2
+    );
 
-    while (validBooks.length < count && attempts < maxAttempts) {
-      const remainingCount = count - validBooks.length;
-      const recommendationsText = await generateBookRecommendations(
-        category,
-        remainingCount + 2
-      );
-
-      if (!recommendationsText) {
-        return NextResponse.json(
-          { error: '도서 추천을 생성하는데 실패했습니다.' },
-          { status: 500 }
-        );
-      }
-
-      const recommendations = parseRecommendations(recommendationsText);
-
-      for (const rec of recommendations) {
-        if (validBooks.length >= count) break;
-
-        const book = await findOrFetchBook(rec.title, rec.author, rec.reason);
-
-        if (book && !addedBookIds.has(book.id)) {
-          // 중복 체크 추가
-          addedBookIds.add(book.id); // ID를 Set에 추가
-          const updatedBook = await prisma.book.update({
-            where: { id: book.id },
-            data: {
-              category,
-              recommendationReason: rec.reason,
-            },
-          });
-
-          validBooks.push({
-            ...updatedBook,
-            isbn: updatedBook.isbn?.toString(),
-            summary: updatedBook.recommendationReason || rec.reason,
-          });
-        }
-      }
-
-      attempts++;
-    }
-
-    // AI 추천으로 충분한 책을 못 찾았다면 DB에서 추가
-    if (validBooks.length < count) {
-      const remainingCount = count - validBooks.length;
-      const existingIds: string[] = Array.from(addedBookIds); // 명시적으로 string[] 타입 지정
-
-      const additionalBooks = await getRandomBooksFromDB(
-        category,
-        remainingCount,
-        existingIds
-      );
-
-      validBooks.push(
-        ...additionalBooks.map((book) => ({
-          ...book,
-          isbn: book.isbn?.toString(),
-          summary:
-            book.recommendationReason ||
-            '이 분야의 인기 도서로, 많은 독자들에게 좋은 평가를 받았습니다.',
-        }))
-      );
-    }
-
-    if (validBooks.length === 0) {
+    if (!recommendationsText) {
       return NextResponse.json(
-        { error: '유효한 도서를 찾을 수 없습니다.' },
-        { status: 404 }
+        { error: 'Failed to generate recommendations' },
+        { status: 500 }
       );
     }
 
-    return NextResponse.json({ books: validBooks });
+    const recommendations = parseRecommendations(recommendationsText);
+    const aiBooks = [];
+
+    for (const rec of recommendations) {
+      if (aiBooks.length >= count) break;
+
+      const book = await findOrFetchBook(rec.title, rec.author, rec.reason);
+
+      if (book) {
+        // 카테고리 업데이트
+        const updatedBook = await prisma.book.update({
+          where: { id: book.id },
+          data: {
+            category,
+            recommendationReason: rec.reason,
+          },
+        });
+
+        aiBooks.push({
+          ...updatedBook,
+          isbn: updatedBook.isbn?.toString(),
+          summary: updatedBook.recommendationReason || rec.reason,
+        });
+      }
+    }
+
+    return NextResponse.json({
+      books: aiBooks,
+    });
   } catch (error) {
-    console.error('Book recommendation error:', error);
+    console.error('Error generating AI recommendations:', error);
     return NextResponse.json(
-      { error: '도서 추천 중 오류가 발생했습니다.' },
+      { error: 'Internal Server Error' },
       { status: 500 }
     );
   }

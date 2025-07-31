@@ -13,6 +13,9 @@ export default function Home() {
           <p className="text-xl text-gray-600">
             AI가 도와주는 맞춤형 도서 추천과 발제문 생성
           </p>
+          <p className="mt-2 text-xs text-gray-400">
+            📚 매일 오후 2시에 AI 추천 목록이 갱신됩니다
+          </p>
         </div>
 
         <BookRecommendation />
