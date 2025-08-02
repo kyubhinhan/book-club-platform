@@ -18,10 +18,10 @@ interface RecommendationFormData {
 }
 
 const categories: Category[] = [
-  { id: 'fiction', name: '소설', emoji: '📚' },
-  { id: 'non-fiction', name: '비소설', emoji: '📖' },
-  { id: 'self-help', name: '자기계발', emoji: '✨' },
-  { id: 'business', name: '경영/경제', emoji: '💼' },
+  { id: '소설', name: '소설', emoji: '📚' },
+  { id: '비소설', name: '비소설', emoji: '📖' },
+  { id: '자기계발', name: '자기계발', emoji: '✨' },
+  { id: '경영/경제', name: '경영/경제', emoji: '💼' },
 ];
 
 export default function BookRecommendation() {

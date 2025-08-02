@@ -35,9 +35,8 @@ interface BookSearchResult {
   };
 }
 
-export async function searchBookByTitleAndAuthor(
-  title: string,
-  author: string
+export async function searchBookByTitle(
+  title: string
 ): Promise<BookSearchResult> {
   try {
     const clientId = process.env.NAVER_CLIENT_ID;
@@ -72,22 +71,15 @@ export async function searchBookByTitleAndAuthor(
       };
     }
 
-    // 정확도를 높이기 위해 제목과 저자가 정확히 일치하는 도서 찾기
+    // 정확도를 높이기 위해 제목이 정확히 일치하는 도서 찾기
     const exactMatch = data.items.find((item) => {
       const cleanItemTitle = item.title.replace(/<[^>]*>?/g, '').toLowerCase();
-      const cleanItemAuthor = item.author
-        .replace(/<[^>]*>?/g, '')
-        .toLowerCase();
       const cleanSearchTitle = title.toLowerCase();
-      const cleanSearchAuthor = author.toLowerCase();
-
-      return (
-        cleanItemTitle.includes(cleanSearchTitle) &&
-        cleanItemAuthor.includes(cleanSearchAuthor)
-      );
+      return cleanItemTitle.includes(cleanSearchTitle);
     });
 
-    const bookInfo = exactMatch;
+    // 정확히 일치하는 도서가 없으면 첫 번째 도서 사용
+    const bookInfo = exactMatch || data.items[0];
     if (!bookInfo) {
       return {
         success: false,
