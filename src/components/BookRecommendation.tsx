@@ -26,7 +26,7 @@ const categories: Category[] = [
 
 export default function BookRecommendation() {
   const [loading, setLoading] = useState(false);
-  const [loadingAi, setLoadingAi] = useState(false);
+  // const [loadingAi, setLoadingAi] = useState(false);
   const [recommendedBooks, setRecommendedBooks] = useState<BookWithSummary[]>(
     []
   );
@@ -75,38 +75,38 @@ export default function BookRecommendation() {
     }
   };
 
-  const loadAiRecommendations = async (categoryId: string) => {
-    setLoadingAi(true);
-    setError(null);
+  // const loadAiRecommendations = async (categoryId: string) => {
+  //   setLoadingAi(true);
+  //   setError(null);
 
-    try {
-      const aiResponse = await fetch('/api/books/recommend', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          category: categoryId,
-          count: 10,
-        }),
-      });
+  //   try {
+  //     const aiResponse = await fetch('/api/books/recommend', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         category: categoryId,
+  //         count: 10,
+  //       }),
+  //     });
 
-      if (!aiResponse.ok) throw new Error('AI 추천 생성에 실패했습니다.');
+  //     if (!aiResponse.ok) throw new Error('AI 추천 생성에 실패했습니다.');
 
-      const aiData = await aiResponse.json();
-      const aiBooks: BookWithSummary[] = aiData.books || [];
+  //     const aiData = await aiResponse.json();
+  //     const aiBooks: BookWithSummary[] = aiData.books || [];
 
-      setRecommendedBooks(aiBooks);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'AI 추천 생성 중 오류가 발생했습니다.'
-      );
-    } finally {
-      setLoadingAi(false);
-    }
-  };
+  //     setRecommendedBooks(aiBooks);
+  //   } catch (err) {
+  //     setError(
+  //       err instanceof Error
+  //         ? err.message
+  //         : 'AI 추천 생성 중 오류가 발생했습니다.'
+  //     );
+  //   } finally {
+  //     setLoadingAi(false);
+  //   }
+  // };
 
   const handleCategorySelect = async (category: Category) => {
     setValue('category', category);
@@ -162,7 +162,7 @@ export default function BookRecommendation() {
           </Box>
 
           {/* AI 추천 버튼 - 오른쪽 상단 */}
-          <Button
+          {/* <Button
             onClick={() => loadAiRecommendations(selectedCategory.id)}
             disabled={loadingAi}
             variant="outlined"
@@ -179,7 +179,7 @@ export default function BookRecommendation() {
             }}
           >
             {loadingAi ? '생성 중...' : 'AI 추천'}
-          </Button>
+          </Button> */}
         </Box>
       </Box>
 
