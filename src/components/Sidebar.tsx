@@ -9,6 +9,7 @@ import {
   Group as GroupIcon,
   Person as PersonIcon,
   Psychology as PsychologyIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import { SIDEBAR_WIDTH_PX } from '@/lib/constants';
 
@@ -27,6 +28,11 @@ export default function Sidebar() {
       text: 'AI 도서 추천',
       icon: <PsychologyIcon className="w-5 h-5" />,
       href: '/',
+    },
+    {
+      text: '도서 검색',
+      icon: <SearchIcon className="w-5 h-5" />,
+      href: '/search',
     },
     {
       text: '모임 관리하기',

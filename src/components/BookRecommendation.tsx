@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Button, Typography, Box, Container, Alert } from '@mui/material';
-import type { BookWithSummary } from './BookCard';
+import { Book } from '@/types/book';
 import BookCard from './BookCard';
 import LoadingBookCard from './LoadingBookCard';
 import { useForm } from 'react-hook-form';
@@ -27,9 +27,7 @@ const categories: Category[] = [
 export default function BookRecommendation() {
   const [loading, setLoading] = useState(false);
   // const [loadingAi, setLoadingAi] = useState(false);
-  const [recommendedBooks, setRecommendedBooks] = useState<BookWithSummary[]>(
-    []
-  );
+  const [recommendedBooks, setRecommendedBooks] = useState<Book[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const isInitialLoadRef = useRef(false);
@@ -63,7 +61,7 @@ export default function BookRecommendation() {
       if (!dbResponse.ok) throw new Error('책 목록 조회에 실패했습니다.');
 
       const dbData = await dbResponse.json();
-      const books: BookWithSummary[] = dbData.books || [];
+      const books: Book[] = dbData.books || [];
 
       setRecommendedBooks(books);
     } catch (err) {
