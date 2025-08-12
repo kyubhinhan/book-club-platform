@@ -8,12 +8,10 @@ import {
   CalendarToday as CalendarIcon,
   AccessTime as TimeIcon,
   LocationOn as LocationIcon,
-  Group as GroupIcon,
   Person as PersonIcon,
   Book as BookIcon,
   QuestionAnswer as QuestionIcon,
   Edit as EditIcon,
-  Image as ImageIcon,
 } from '@mui/icons-material';
 
 export default function MeetingDetail({ meetingId }: { meetingId: string }) {
@@ -95,21 +93,18 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
             </h2>
             <div className="flex gap-6">
               {/* 모임 이미지 */}
-              <div className="flex-shrink-0 w-[200px] h-[200px] relative flex items-center justify-center">
-                {meeting.imageUrl ? (
+              {meeting.imageUrl ? (
+                <div className="flex-shrink-0 w-[200px] h-[200px] relative flex items-center justify-center">
                   <Image
                     src={meeting.imageUrl}
                     alt={meeting.title}
                     fill
                     className="rounded-lg shadow-md object-cover"
                   />
-                ) : (
-                  <div className="flex flex-col items-center justify-center border-2 border-gray-200 rounded-lg w-full h-full">
-                    <ImageIcon className="text-gray-400 text-3xl mb-2" />
-                    <span className="text-gray-400 text-sm">모임 이미지</span>
-                  </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                <></>
+              )}
 
               {/* 모임 정보 */}
               <div className="flex-1">
@@ -145,13 +140,6 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
                           {meeting.detailedAddress}
                         </p>
                       )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <GroupIcon className="text-blue-600" />
-                    <div>
-                      <p className="text-sm text-gray-500">최대 참가자</p>
-                      <p className="font-medium">{meeting.maxParticipants}명</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -207,7 +195,7 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
                     </div>
                   )}
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 flex flex-col justify-center">
                   <div className="text-center md:text-left">
                     <h3 className="font-semibold text-2xl text-gray-900 mb-2">
                       {meeting.book.title}
@@ -215,16 +203,9 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
                     <p className="text-lg text-gray-600 mb-3">
                       저자: {meeting.book.author}
                     </p>
-                    {meeting.book.link && (
-                      <p className="text-gray-500 mb-3">
-                        <a
-                          href={meeting.book.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 underline"
-                        >
-                          상세 정보 보기 →
-                        </a>
+                    {meeting.book.description && (
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-3">
+                        {meeting.book.description}
                       </p>
                     )}
                   </div>
@@ -255,7 +236,7 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
               <div className="space-y-4">
                 {meeting.discussion.questions.map((question, index) => (
                   <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-center gap-3">
                       <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
                         {index + 1}
                       </span>
@@ -268,36 +249,6 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
               </div>
             </div>
           )}
-
-          {/* 참가자 정보 카드 */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              👥 참가자
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {meeting.participants?.length > 0 ? (
-                meeting.participants.map((participant) => (
-                  <div
-                    key={participant.id}
-                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
-                  >
-                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                      <PersonIcon className="text-gray-600 text-sm" />
-                    </div>
-                    <span className="text-gray-700">
-                      {participant.name || '알 수 없음'}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <div className="col-span-full">
-                  <p className="text-gray-500 text-center py-8">
-                    아직 참가자가 없습니다.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
         {/* 하단 버튼 */}
