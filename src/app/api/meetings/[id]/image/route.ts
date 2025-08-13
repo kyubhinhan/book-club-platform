@@ -76,10 +76,10 @@ export async function POST(
     const arrayBuffer = await imageFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const uploadResult = (await uploadToCloudinary(buffer, {
-      folder: 'meetings',
-      public_id: `meeting_${meetingId}_${Date.now()}`,
-    })) as UploadApiResponse;
+    const uploadResult = (await uploadToCloudinary(
+      buffer,
+      meetingId
+    )) as UploadApiResponse;
 
     if (!uploadResult.secure_url) {
       return NextResponse.json(

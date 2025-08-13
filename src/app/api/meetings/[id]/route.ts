@@ -37,6 +37,7 @@ export async function GET(
             book: true,
           },
         },
+        attachments: true,
       },
     });
 

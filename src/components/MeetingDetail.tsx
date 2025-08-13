@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { Meeting } from '@/types/meeting';
 import Image from 'next/image';
-import { useSession } from 'next-auth/react';
 import {
   CalendarToday as CalendarIcon,
   AccessTime as TimeIcon,
@@ -17,7 +16,6 @@ import {
 export default function MeetingDetail({ meetingId }: { meetingId: string }) {
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [loading, setLoading] = useState(true);
-  const { data: session } = useSession();
 
   const fetchMeetingDetails = useCallback(async () => {
     try {
@@ -41,12 +39,6 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
   useEffect(() => {
     fetchMeetingDetails();
   }, [fetchMeetingDetails, meetingId]);
-
-  // 현재 사용자가 모임 생성자인지 확인
-  const isCreator =
-    session?.user &&
-    'id' in session.user &&
-    session.user.id === meeting?.creatorId;
 
   if (loading) {
     return (
@@ -170,6 +162,52 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
                 </div>
               </div>
             )}
+
+            {/* 첨부파일 */}
+            {meeting.attachments && meeting.attachments.length > 0 && (
+              <div className="mt-6">
+                <div className="bg-gray-50 rounded-lg p-5">
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                      📎 첨부파일
+                    </h3>
+                    <div className="space-y-2">
+                      {meeting.attachments.map((attachment) => (
+                        <div
+                          key={attachment.id}
+                          className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                              📄
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {attachment.originalName}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {(attachment.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() =>
+                              window.open(
+                                `/api/attachments/${attachment.id}`,
+                                '_blank'
+                              )
+                            }
+                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+                          >
+                            다운로드
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 책 정보 카드 */}
@@ -259,17 +297,15 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
           >
             목록으로 돌아가기
           </button>
-          {isCreator && (
-            <button
-              onClick={() =>
-                (window.location.href = `/meetings/${meetingId}/edit`)
-              }
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <EditIcon className="text-sm" />
-              수정하기
-            </button>
-          )}
+          <button
+            onClick={() =>
+              (window.location.href = `/meetings/${meetingId}/edit`)
+            }
+            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <EditIcon className="text-sm" />
+            수정하기
+          </button>
         </div>
       </div>
     </div>

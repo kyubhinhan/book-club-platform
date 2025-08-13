@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import cloudinary from '@/lib/cloudinary';
-import { FILE_UPLOAD_CONFIG, fileUploadUtils } from '@/config/fileUpload';
+import { uploadToCloudinary } from '@/lib/cloudinary';
+import { clientFileUploadUtils } from '@/utils/clientFileUpload';
 
 interface CloudinaryUploadResult {
   public_id: string;
@@ -36,17 +36,17 @@ export async function POST(request: NextRequest) {
 
     for (const file of files) {
       // 파일 크기 검증
-      if (!fileUploadUtils.isValidFileSize(file.size)) {
+      if (!clientFileUploadUtils.isValidFileSize(file.size)) {
         return NextResponse.json(
           {
-            error: `${file.name} 파일이 너무 큽니다. (최대 ${fileUploadUtils.formatFileSize(FILE_UPLOAD_CONFIG.MAX_FILE_SIZE)}MB)`,
+            error: `${file.name} 파일이 너무 큽니다. (최대 ${clientFileUploadUtils.formatFileSize(10 * 1024 * 1024)}MB)`,
           },
           { status: 400 }
         );
       }
 
       // 파일 형식 검증
-      if (!fileUploadUtils.isValidMimeType(file.type)) {
+      if (!clientFileUploadUtils.isValidMimeType(file.type)) {
         return NextResponse.json(
           { error: `${file.name} 파일 형식이 지원되지 않습니다.` },
           { status: 400 }
@@ -58,24 +58,10 @@ export async function POST(request: NextRequest) {
       const buffer = Buffer.from(bytes);
 
       // Cloudinary 업로드
-      const uploadResult = await new Promise<CloudinaryUploadResult>(
-        (resolve, reject) => {
-          const uploadStream = cloudinary.uploader.upload_stream(
-            {
-              folder: fileUploadUtils.getCloudinaryFolder(meetingId),
-              resource_type: FILE_UPLOAD_CONFIG.CLOUDINARY.RESOURCE_TYPE,
-              allowed_formats: [...FILE_UPLOAD_CONFIG.ALLOWED_EXTENSIONS],
-              transformation: FILE_UPLOAD_CONFIG.CLOUDINARY.TRANSFORMATIONS,
-            },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result as CloudinaryUploadResult);
-            }
-          );
-
-          uploadStream.end(buffer);
-        }
-      );
+      const uploadResult = (await uploadToCloudinary(
+        buffer,
+        meetingId
+      )) as CloudinaryUploadResult;
 
       // DB에 파일 정보 저장
       const attachment = await prisma.attachment.create({

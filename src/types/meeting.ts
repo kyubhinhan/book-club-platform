@@ -27,6 +27,18 @@ export interface Discussion {
   book: Book;
 }
 
+export interface Attachment {
+  id: string;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  path: string;
+  meetingId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Meeting {
   id: string;
   title: string;
@@ -47,6 +59,7 @@ export interface Meeting {
   creator: User;
   participants: User[];
   discussion: Discussion | null;
+  attachments: Attachment[];
   createdAt: string;
   updatedAt: string;
 }

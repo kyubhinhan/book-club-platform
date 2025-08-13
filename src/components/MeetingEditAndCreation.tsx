@@ -28,7 +28,10 @@ import { useState, useEffect } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
 import React from 'react';
 import { MeetingData, Meeting } from '@/types/meeting';
-import { FILE_UPLOAD_CONFIG, fileUploadUtils } from '@/config/fileUpload';
+import {
+  CLIENT_FILE_UPLOAD_CONFIG,
+  clientFileUploadUtils,
+} from '@/utils/clientFileUpload';
 
 // 날짜 포맷팅 함수
 // "2025-06-13" 형식으로 반환
@@ -65,8 +68,10 @@ export default function MeetingEditAndCreation({
   const [questionInput, setQuestionInput] = useState('');
   const [questionError, setQuestionError] = useState<string | null>(null);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
+  const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [loadingMeeting, setLoadingMeeting] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [attachmentsToDelete, setAttachmentsToDelete] = useState<string[]>([]);
   const [addressDialogOpen, setAddressDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
@@ -134,6 +139,9 @@ export default function MeetingEditAndCreation({
             if (meeting.imageUrl) {
               setMeetingImage(meeting.imageUrl);
             }
+
+            // meeting 상태 설정
+            setMeeting(meeting);
           }
         } catch (error) {
           console.error('Error fetching meeting:', error);
@@ -192,13 +200,13 @@ export default function MeetingEditAndCreation({
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     const validFiles = files.filter((file) => {
-      if (!fileUploadUtils.isValidFileSize(file.size)) {
+      if (!clientFileUploadUtils.isValidFileSize(file.size)) {
         alert(
-          `${file.name} 파일이 너무 큽니다. (최대 ${fileUploadUtils.formatFileSize(FILE_UPLOAD_CONFIG.MAX_FILE_SIZE)}MB)`
+          `${file.name} 파일이 너무 큽니다. (최대 ${clientFileUploadUtils.formatFileSize(CLIENT_FILE_UPLOAD_CONFIG.MAX_FILE_SIZE)}MB)`
         );
         return false;
       }
-      if (!fileUploadUtils.isValidMimeType(file.type)) {
+      if (!clientFileUploadUtils.isValidMimeType(file.type)) {
         alert(`${file.name} 파일 형식이 지원되지 않습니다.`);
         return false;
       }
@@ -213,6 +221,10 @@ export default function MeetingEditAndCreation({
 
   const removeAttachment = (index: number) => {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingAttachment = (attachmentId: string) => {
+    setAttachmentsToDelete((prev) => [...prev, attachmentId]);
   };
 
   const onSubmit = async (data: MeetingData) => {
@@ -274,6 +286,41 @@ export default function MeetingEditAndCreation({
 
           if (!imageUploadResponse.ok) {
             console.warn('Image upload failed, but meeting was updated');
+          }
+        }
+
+        // 첨부파일 삭제 처리
+        if (attachmentsToDelete.length > 0) {
+          for (const attachmentId of attachmentsToDelete) {
+            try {
+              await fetch(`/api/attachments/${attachmentId}`, {
+                method: 'DELETE',
+              });
+            } catch (error) {
+              console.warn(
+                `Failed to delete attachment ${attachmentId}:`,
+                error
+              );
+            }
+          }
+        }
+
+        // 새 첨부파일 업로드
+        if (attachments.length > 0) {
+          const fileFormData = new FormData();
+          fileFormData.append('meetingId', meetingId);
+
+          attachments.forEach((file) => {
+            fileFormData.append('files', file);
+          });
+
+          const fileResponse = await fetch('/api/attachments/upload', {
+            method: 'POST',
+            body: fileFormData,
+          });
+
+          if (!fileResponse.ok) {
+            console.warn('File upload failed, but meeting was updated');
           }
         }
 
@@ -850,11 +897,12 @@ export default function MeetingEditAndCreation({
                 >
                   참고 자료
                 </Typography>
+
                 <input
                   ref={fileInputRef}
                   type="file"
                   multiple
-                  accept={FILE_UPLOAD_CONFIG.ALLOWED_EXTENSIONS.map(
+                  accept={CLIENT_FILE_UPLOAD_CONFIG.ALLOWED_EXTENSIONS.map(
                     (ext) => `.${ext}`
                   ).join(',')}
                   onChange={handleFileUpload}
@@ -871,28 +919,88 @@ export default function MeetingEditAndCreation({
                     borderWidth: 2,
                   }}
                 >
-                  파일 선택하기
+                  파일 추가하기
                 </Button>
                 <Typography
                   variant="caption"
                   color="textSecondary"
                   sx={{ mt: 1, display: 'block' }}
                 >
-                  {FILE_UPLOAD_CONFIG.FILE_TYPE_DESCRIPTION}
+                  {CLIENT_FILE_UPLOAD_CONFIG.FILE_TYPE_DESCRIPTION}
                 </Typography>
 
-                {attachments.length > 0 && (
+                {/* 통합된 첨부파일 목록 */}
+                {(attachments.length > 0 ||
+                  (isEditMode &&
+                    meeting?.attachments &&
+                    meeting.attachments.filter(
+                      (att) => !attachmentsToDelete.includes(att.id)
+                    ).length > 0)) && (
                   <div className="space-y-2 mt-3">
+                    <Typography
+                      variant="caption"
+                      color="textSecondary"
+                      sx={{ mb: 2, display: 'block' }}
+                    >
+                      첨부파일
+                    </Typography>
+
+                    {/* 기존 첨부파일 (삭제되지 않은 것들) */}
+                    {isEditMode &&
+                      meeting?.attachments &&
+                      meeting.attachments
+                        .filter((att) => !attachmentsToDelete.includes(att.id))
+                        .map((attachment) => (
+                          <div
+                            key={attachment.id}
+                            className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                📄
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                  {attachment.originalName}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {(attachment.size / 1024 / 1024).toFixed(2)}{' '}
+                                  MB
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              size="small"
+                              color="error"
+                              onClick={() =>
+                                removeExistingAttachment(attachment.id)
+                              }
+                              variant="outlined"
+                            >
+                              삭제
+                            </Button>
+                          </div>
+                        ))}
+
+                    {/* 새로 추가된 첨부파일 */}
                     {attachments.map((file, index) => (
                       <div
-                        key={index}
-                        className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                        key={`new-${index}`}
+                        className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200"
                       >
-                        <div className="flex items-center">
-                          <span className="text-sm text-gray-600 mr-2">
-                            {file.name} (
-                            {fileUploadUtils.formatFileSize(file.size)}MB)
-                          </span>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                            📄
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {file.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {clientFileUploadUtils.formatFileSize(file.size)}{' '}
+                              MB
+                            </p>
+                          </div>
                         </div>
                         <Button
                           size="small"
