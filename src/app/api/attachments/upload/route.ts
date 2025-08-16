@@ -60,7 +60,8 @@ export async function POST(request: NextRequest) {
       // Cloudinary 업로드
       const uploadResult = (await uploadToCloudinary(
         buffer,
-        meetingId
+        meetingId,
+        file.type
       )) as CloudinaryUploadResult;
 
       // DB에 파일 정보 저장

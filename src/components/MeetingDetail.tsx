@@ -11,11 +11,13 @@ import {
   Book as BookIcon,
   QuestionAnswer as QuestionIcon,
   Edit as EditIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 
 export default function MeetingDetail({ meetingId }: { meetingId: string }) {
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   const fetchMeetingDetails = useCallback(async () => {
     try {
@@ -35,6 +37,37 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
       setLoading(false);
     }
   }, [meetingId]);
+
+  const downloadAttachment = async (
+    attachmentId: string,
+    originalName: string
+  ) => {
+    try {
+      setDownloading(attachmentId);
+
+      const response = await fetch(`/api/attachments/${attachmentId}/download`);
+
+      if (!response.ok) {
+        throw new Error('파일 다운로드에 실패했습니다.');
+      }
+
+      // 파일 다운로드 처리
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = originalName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('파일 다운로드 중 오류가 발생했습니다.');
+    } finally {
+      setDownloading(null);
+    }
+  };
 
   useEffect(() => {
     fetchMeetingDetails();
@@ -192,14 +225,29 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
                           </div>
                           <button
                             onClick={() =>
-                              window.open(
-                                `/api/attachments/${attachment.id}`,
-                                '_blank'
+                              downloadAttachment(
+                                attachment.id,
+                                attachment.originalName
                               )
                             }
-                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+                            disabled={downloading === attachment.id}
+                            className={`
+                              px-3 py-1 bg-blue-600 text-white text-sm rounded-md 
+                              hover:bg-blue-700 transition-colors disabled:bg-gray-400 
+                              disabled:cursor-not-allowed flex items-center gap-2
+                            `}
                           >
-                            다운로드
+                            {downloading === attachment.id ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                다운로드 중...
+                              </>
+                            ) : (
+                              <>
+                                <DownloadIcon className="text-sm" />
+                                다운로드
+                              </>
+                            )}
                           </button>
                         </div>
                       ))}
