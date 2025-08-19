@@ -16,15 +16,17 @@ export interface Book {
   link: string | null;
   publisher: string | null;
   price: number | null;
-  pubDate: string | null;
+  pubDate: Date | null;
   recommendationReason: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Discussion {
   id: string;
   questions: string[];
   bookId: string;
-  book: Book;
+  book?: Book; // 선택적으로 변경
 }
 
 export interface Attachment {
@@ -35,15 +37,15 @@ export interface Attachment {
   size: number;
   path: string;
   meetingId: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Meeting {
   id: string;
   title: string;
   description: string | null;
-  meetingDate: string;
+  meetingDate: Date;
   maxParticipants: number;
   address: string;
   detailedAddress: string | null;
@@ -60,8 +62,8 @@ export interface Meeting {
   participants: User[];
   discussion: Discussion | null;
   attachments: Attachment[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface MeetingData {

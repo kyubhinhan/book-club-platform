@@ -1,8 +1,7 @@
-'use client';
-import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { Meeting } from '@/types/meeting';
 import Image from 'next/image';
+import Link from 'next/link';
 import {
   CalendarToday as CalendarIcon,
   AccessTime as TimeIcon,
@@ -11,88 +10,35 @@ import {
   Book as BookIcon,
   QuestionAnswer as QuestionIcon,
   Edit as EditIcon,
-  Download as DownloadIcon,
 } from '@mui/icons-material';
+import { prisma } from '@/lib/prisma';
+import { notFound } from 'next/navigation';
 
-export default function MeetingDetail({ meetingId }: { meetingId: string }) {
-  const [meeting, setMeeting] = useState<Meeting | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [downloading, setDownloading] = useState<string | null>(null);
+interface MeetingDetailProps {
+  meetingId: string;
+}
 
-  const fetchMeetingDetails = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/meetings/${meetingId}`);
-
-      if (!response.ok) {
-        throw new Error('모임 정보를 가져오는데 실패했습니다.');
-      }
-
-      const meetingData = await response.json();
-      setMeeting(meetingData.meeting);
-    } catch (err) {
-      alert(
-        err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [meetingId]);
-
-  const downloadAttachment = async (
-    attachmentId: string,
-    originalName: string
-  ) => {
-    try {
-      setDownloading(attachmentId);
-
-      const response = await fetch(`/api/attachments/${attachmentId}/download`);
-
-      if (!response.ok) {
-        throw new Error('파일 다운로드에 실패했습니다.');
-      }
-
-      // 파일 다운로드 처리
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = originalName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Download error:', error);
-      alert('파일 다운로드 중 오류가 발생했습니다.');
-    } finally {
-      setDownloading(null);
-    }
-  };
-
-  useEffect(() => {
-    fetchMeetingDetails();
-  }, [fetchMeetingDetails, meetingId]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">모임 정보를 불러오는 중...</p>
-        </div>
-      </div>
-    );
-  }
+async function getMeetingData(meetingId: string): Promise<Meeting> {
+  const meeting = await prisma.meeting.findUnique({
+    where: { id: meetingId },
+    include: {
+      book: true,
+      creator: true,
+      discussion: true,
+      attachments: true,
+      participants: true,
+    },
+  });
 
   if (!meeting) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-gray-500 text-lg">모임을 찾을 수 없습니다.</div>
-        </div>
-      </div>
-    );
+    notFound();
   }
+
+  return meeting;
+}
+
+export default async function MeetingDetail({ meetingId }: MeetingDetailProps) {
+  const meeting = await getMeetingData(meetingId);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -223,32 +169,13 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
                               </p>
                             </div>
                           </div>
-                          <button
-                            onClick={() =>
-                              downloadAttachment(
-                                attachment.id,
-                                attachment.originalName
-                              )
-                            }
-                            disabled={downloading === attachment.id}
-                            className={`
-                              px-3 py-1 bg-blue-600 text-white text-sm rounded-md 
-                              hover:bg-blue-700 transition-colors disabled:bg-gray-400 
-                              disabled:cursor-not-allowed flex items-center gap-2
-                            `}
+                          <a
+                            href={`/api/attachments/${attachment.id}/download`}
+                            download
+                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
                           >
-                            {downloading === attachment.id ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                다운로드 중...
-                              </>
-                            ) : (
-                              <>
-                                <DownloadIcon className="text-sm" />
-                                다운로드
-                              </>
-                            )}
-                          </button>
+                            다운로드
+                          </a>
                         </div>
                       ))}
                     </div>
@@ -339,21 +266,25 @@ export default function MeetingDetail({ meetingId }: { meetingId: string }) {
 
         {/* 하단 버튼 */}
         <div className="mt-8 flex justify-center gap-4">
-          <button
-            onClick={() => (window.location.href = '/meetings')}
+          <Link
+            href="/meetings"
             className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
           >
             목록으로 돌아가기
-          </button>
-          <button
-            onClick={() =>
-              (window.location.href = `/meetings/${meetingId}/edit`)
-            }
+          </Link>
+          <a
+            href={`/api/meetings/${meetingId}/pdf`}
+            className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            📄 PDF로 다운로드
+          </a>
+          <Link
+            href={`/meetings/${meetingId}/edit`}
             className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <EditIcon className="text-sm" />
             수정하기
-          </button>
+          </Link>
         </div>
       </div>
     </div>
