@@ -31,16 +31,51 @@ export async function GET(
 
     // MeetingDetail 페이지로 이동
     const baseUrl = 'http://localhost:3000';
-    const meetingUrl = `${baseUrl}/meetings/${params.id}`;
+    const meetingUrl = `${baseUrl}/pdf/${params.id}`;
 
     await page.goto(meetingUrl, {
       waitUntil: 'networkidle0',
       timeout: 30000,
     });
 
+    // PDF 전용 CSS 주입
+    await page.addStyleTag({
+      content: `
+        @media print {
+          .flex-row {
+            display: flex !important;
+            flex-direction: row !important;
+          }
+          .flex-col {
+            display: flex !important;
+            flex-direction: column !important;
+          }
+          .flex {
+            display: flex !important;
+          }
+          .grid {
+            display: grid !important;
+          }
+          .hidden {
+            display: none !important;
+          }
+          .md\\:flex-row {
+            display: flex !important;
+            flex-direction: row !important;
+          }
+          .md\\:grid-cols-2 {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+        }
+      `,
+    });
     // PDF 생성
     const pdf = await page.pdf({
-      format: 'A4',
+      margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+      preferCSSPageSize: true,
+      printBackground: true,
+      scale: 0.8,
     });
 
     await browser.close();

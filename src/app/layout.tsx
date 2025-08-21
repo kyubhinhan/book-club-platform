@@ -2,8 +2,7 @@ import type { Metadata } from 'next';
 import { Noto_Sans_KR } from 'next/font/google';
 import './globals.css';
 import Providers from '@/components/Providers';
-import Sidebar from '@/components/Sidebar';
-import { SIDEBAR_WIDTH_PX } from '@/lib/constants';
+import ConditionalSidebar from '@/components/ConditionalSidebar';
 import AuthGuard from '@/components/AuthGuard';
 
 const notoSansKr = Noto_Sans_KR({
@@ -26,15 +25,7 @@ export default function RootLayout({
       <body className={`${notoSansKr.variable}`}>
         <Providers>
           <AuthGuard>
-            <div className="flex">
-              <Sidebar />
-              <main
-                className="flex-1"
-                style={{ marginLeft: `${SIDEBAR_WIDTH_PX}` }}
-              >
-                {children}
-              </main>
-            </div>
+            <ConditionalSidebar>{children}</ConditionalSidebar>
           </AuthGuard>
         </Providers>
       </body>

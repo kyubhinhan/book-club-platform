@@ -16,6 +16,7 @@ import { notFound } from 'next/navigation';
 
 interface MeetingDetailProps {
   meetingId: string;
+  hideButtons?: boolean;
 }
 
 async function getMeetingData(meetingId: string): Promise<Meeting> {
@@ -37,29 +38,44 @@ async function getMeetingData(meetingId: string): Promise<Meeting> {
   return meeting;
 }
 
-export default async function MeetingDetail({ meetingId }: MeetingDetailProps) {
+export default async function MeetingDetail({
+  meetingId,
+  hideButtons = false,
+}: MeetingDetailProps) {
   const meeting = await getMeetingData(meetingId);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className={`min-h-screen bg-gray-50 ${hideButtons ? 'py-4' : 'py-8'}`}>
+      <div
+        className={`max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 ${hideButtons ? 'px-2' : ''}`}
+      >
         {/* 헤더 */}
-        <div className="mb-8">
+        <div className={`mb-8 ${hideButtons ? 'mb-4' : ''}`}>
           <div className="flex flex-col md:flex-row gap-6 items-start">
             {/* 모임 제목 및 정보 */}
             <div className="flex-1">
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              <h1
+                className={`font-bold text-gray-900 mb-2 ${hideButtons ? 'text-2xl' : 'text-4xl'}`}
+              >
                 {meeting.title}
               </h1>
-              <p className="text-lg text-gray-600">독서 모임 상세 정보</p>
+              <p
+                className={`text-gray-600 ${hideButtons ? 'text-sm' : 'text-lg'}`}
+              >
+                독서 모임 상세 정보
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className={`space-y-6 ${hideButtons ? 'space-y-4' : ''}`}>
           {/* 모임 정보 카드 */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <div
+            className={`bg-white rounded-xl shadow-sm border border-gray-200 ${hideButtons ? 'p-4' : 'p-6'}`}
+          >
+            <h2
+              className={`font-semibold text-gray-900 mb-4 flex items-center gap-2 ${hideButtons ? 'text-lg' : 'text-xl'}`}
+            >
               📅 모임 정보
             </h2>
             <div className="flex gap-6">
@@ -265,27 +281,29 @@ export default async function MeetingDetail({ meetingId }: MeetingDetailProps) {
         </div>
 
         {/* 하단 버튼 */}
-        <div className="mt-8 flex justify-center gap-4">
-          <Link
-            href="/meetings"
-            className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
-          >
-            목록으로 돌아가기
-          </Link>
-          <a
-            href={`/api/meetings/${meetingId}/pdf`}
-            className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-          >
-            📄 PDF로 다운로드
-          </a>
-          <Link
-            href={`/meetings/${meetingId}/edit`}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <EditIcon className="text-sm" />
-            수정하기
-          </Link>
-        </div>
+        {!hideButtons && (
+          <div className="mt-8 flex justify-center gap-4">
+            <Link
+              href="/meetings"
+              className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
+            >
+              목록으로 돌아가기
+            </Link>
+            <a
+              href={`/api/meetings/${meetingId}/pdf`}
+              className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              📄 PDF로 다운로드
+            </a>
+            <Link
+              href={`/meetings/${meetingId}/edit`}
+              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <EditIcon className="text-sm" />
+              수정하기
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
