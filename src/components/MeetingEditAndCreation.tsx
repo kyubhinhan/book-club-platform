@@ -93,7 +93,6 @@ export default function MeetingEditAndCreation({
       title: '',
       description: '',
       meetingDate: formatDate(currentDate),
-      maxParticipants: 2,
       startTime: formatCurrentTime(currentDate),
       endTime: formatCurrentTime(getTwoHourLater(currentDate)),
       recommendationReason: book.recommendationReason || '',
@@ -122,7 +121,6 @@ export default function MeetingEditAndCreation({
             setValue('title', meeting.title);
             setValue('description', meeting.description || '');
             setValue('meetingDate', formatDate(new Date(meeting.meetingDate)));
-            setValue('maxParticipants', meeting.maxParticipants);
             setValue('startTime', meeting.startTime);
             setValue('endTime', meeting.endTime);
             setValue('recommendationReason', meeting.recommendationReason);
@@ -844,19 +842,6 @@ export default function MeetingEditAndCreation({
                   slotProps={{ inputLabel: { shrink: true } }}
                 />
               </div>
-
-              <TextField
-                fullWidth
-                label="최대 참여 인원"
-                type="number"
-                {...register('maxParticipants', {
-                  required: true,
-                  min: 2,
-                  max: 20,
-                })}
-                slotProps={{ htmlInput: { min: 2, max: 20 } }}
-                error={!!errors.maxParticipants}
-              />
 
               <TextField
                 fullWidth

@@ -115,7 +115,6 @@ export async function PUT(
     const meetingDate = formData.get('meetingDate') as string;
     const startTime = formData.get('startTime') as string;
     const endTime = formData.get('endTime') as string;
-    const maxParticipants = parseInt(formData.get('maxParticipants') as string);
     const address = formData.get('address') as string;
     const detailedAddress = formData.get('detailedAddress') as string;
     const recommendationReason = formData.get('recommendationReason') as string;
@@ -131,7 +130,6 @@ export async function PUT(
         meetingDate: new Date(meetingDate),
         startTime,
         endTime,
-        maxParticipants,
         address,
         detailedAddress,
         recommendationReason,

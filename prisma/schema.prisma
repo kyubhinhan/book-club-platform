@@ -80,7 +80,6 @@ model Meeting {
   title             String
   description       String?
   meetingDate       DateTime
-  maxParticipants   Int
   address           String            // 주소 (다음 우편번호 API로 검색한 주소)
   detailedAddress   String?           // 상세 주소 (건물명, 층수, 호수 등)
   startTime         String            // HH:mm format

@@ -172,7 +172,6 @@ export default function MeetingList() {
                           {meeting.detailedAddress}
                         </p>
                       )}
-                      <p>👥 최대 {meeting.maxParticipants}명</p>
                     </div>
                   </div>
                   <div className="text-right ml-4">

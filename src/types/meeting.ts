@@ -46,7 +46,6 @@ export interface Meeting {
   title: string;
   description: string | null;
   meetingDate: Date;
-  maxParticipants: number;
   address: string;
   detailedAddress: string | null;
   startTime: string;
@@ -72,7 +71,6 @@ export interface MeetingData {
   meetingDate: string;
   startTime: string;
   endTime: string;
-  maxParticipants: number;
   address: string;
   detailedAddress?: string;
   recommendationReason: string;
