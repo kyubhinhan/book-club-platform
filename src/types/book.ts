@@ -1,12 +1,14 @@
 // 책 관련 공통 타입 정의
 
+export type CategoryId = '소설' | '비소설' | '자기계발' | '경영/경제';
+
 export interface Book {
   id: string;
   title: string;
   author: string;
   description: string | null;
   isbn: string | null;
-  category: string;
+  category: CategoryId;
   imageUrl: string | null;
   link: string | null;
   publisher: string | null;

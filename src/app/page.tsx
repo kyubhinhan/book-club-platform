@@ -1,8 +1,13 @@
-'use client';
-
 import BookRecommendation from '@/components/BookRecommendation';
+import { CategoryId } from '@/types/book';
 
-export default function Home() {
+interface HomeProps {
+  searchParams: { category?: CategoryId };
+}
+
+export default function Home({ searchParams }: HomeProps) {
+  const selectedCategory: CategoryId = searchParams.category || '소설';
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
@@ -18,7 +23,7 @@ export default function Home() {
           </p>
         </div>
 
-        <BookRecommendation />
+        <BookRecommendation selectedCategory={selectedCategory} />
       </div>
     </div>
   );
