@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Noto_Sans_KR } from 'next/font/google';
 import './globals.css';
-import Providers from '@/components/Providers';
+import SessionProvider from '@/components/SessionProvider';
 import ConditionalSidebar from '@/components/ConditionalSidebar';
 import AuthGuard from '@/components/AuthGuard';
 
@@ -23,11 +23,11 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={`${notoSansKr.variable}`}>
-        <Providers>
+        <SessionProvider>
           <AuthGuard>
             <ConditionalSidebar>{children}</ConditionalSidebar>
           </AuthGuard>
-        </Providers>
+        </SessionProvider>
       </body>
     </html>
   );
