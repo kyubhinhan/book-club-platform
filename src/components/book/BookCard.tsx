@@ -2,18 +2,15 @@
 import Image from 'next/image';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookRecommendationManager } from '@/utils/book';
 import { Book } from '@/types/book';
 
 interface BookCardProps {
   book: Book;
-  currentBooks: Book[]; // 현재 추천된 모든 책 목록
   showRecommendationReason?: boolean; // 추천 이유 표시 여부
 }
 
 export default function BookCard({
   book,
-  currentBooks,
   showRecommendationReason = true,
 }: BookCardProps) {
   const router = useRouter();
@@ -44,12 +41,10 @@ export default function BookCard({
         }
       }
 
-      BookRecommendationManager.saveState(currentBooks.map((book) => book.id));
       router.push(`/meetings/new?bookId=${book.id}`);
     } catch (error) {
       console.error('Error saving book:', error);
       // 에러가 발생해도 모임 생성 페이지로 이동
-      BookRecommendationManager.saveState(currentBooks.map((book) => book.id));
       router.push(`/meetings/new?bookId=${book.id}`);
     }
   };

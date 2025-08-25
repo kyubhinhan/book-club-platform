@@ -1,4 +1,4 @@
-import BookRecommendation from '@/components/BookRecommendation';
+import BookRecommendation from '@/components/book/BookRecommendation';
 import { CategoryId } from '@/types/book';
 
 interface HomeProps {

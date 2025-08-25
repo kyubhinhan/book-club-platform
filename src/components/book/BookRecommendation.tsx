@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Alert } from '@mui/material';
-import BookCard from '@/components/BookCard';
+import BookCard from '@/components/book/BookCard';
 import Button from '@/components/common/Button';
 
 import { prisma } from '@/lib/prisma';
@@ -76,7 +76,7 @@ export default async function BookRecommendation({
 
       <div className="flex flex-col gap-4">
         {recommendedBooks.map((book) => (
-          <BookCard key={book.id} book={book} currentBooks={recommendedBooks} />
+          <BookCard key={book.id} book={book} />
         ))}
       </div>
     </div>
