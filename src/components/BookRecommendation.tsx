@@ -1,8 +1,11 @@
-import { Button, Alert } from '@mui/material';
-import { Book, CategoryId } from '@/types/book';
-import BookCard from './BookCard';
-import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
+import { Alert } from '@mui/material';
+import BookCard from '@/components/BookCard';
+import Button from '@/components/common/Button';
+
+import { prisma } from '@/lib/prisma';
+
+import { Book, CategoryId } from '@/types/book';
 
 interface Category {
   id: CategoryId;
@@ -16,10 +19,6 @@ const categories: Category[] = [
   { id: '자기계발', name: '자기계발', emoji: '✨' },
   { id: '경영/경제', name: '경영/경제', emoji: '💼' },
 ];
-
-interface BookRecommendationProps {
-  selectedCategory: CategoryId;
-}
 
 async function getBooksByCategory(categoryId: CategoryId): Promise<Book[]> {
   try {
@@ -44,44 +43,28 @@ async function getBooksByCategory(categoryId: CategoryId): Promise<Book[]> {
 
 export default async function BookRecommendation({
   selectedCategory,
-}: BookRecommendationProps) {
+}: {
+  selectedCategory: CategoryId;
+}) {
   const recommendedBooks = await getBooksByCategory(selectedCategory);
 
   return (
-    <div className="max-w-4xl mx-auto py-4">
-      <div className="flex justify-between items-start mb-6">
-        {/* 카테고리 선택 버튼 그룹 */}
-        <div className="flex-1">
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <Link
-                key={category.id}
-                href={`/?category=${category.id}`}
-                style={{ textDecoration: 'none', flex: 1 }}
-              >
-                <Button
-                  variant={
-                    selectedCategory === category.id ? 'contained' : 'outlined'
-                  }
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    py: 1,
-                    px: 2,
-                    fontSize: '0.8rem',
-                    fontWeight: selectedCategory === category.id ? 600 : 400,
-                    borderRadius: '16px',
-                    minWidth: '100px',
-                    width: '100%',
-                  }}
-                >
-                  <span>{category.emoji}</span>
-                  {category.name}
-                </Button>
-              </Link>
-            ))}
-          </div>
+    <div className="max-w-4xl py-4">
+      {/* 카테고리 선택 버튼 그룹 */}
+      <div className="w-full flex justify-between mb-6">
+        <div className="w-full flex gap-2">
+          {categories.map((category) => (
+            <Link
+              key={category.id}
+              href={`/?category=${category.id}`}
+              className="flex-1"
+            >
+              <Button isPrimary={selectedCategory === category.id}>
+                <span>{category.emoji}</span>
+                {category.name}
+              </Button>
+            </Link>
+          ))}
         </div>
       </div>
 
