@@ -1,4 +1,4 @@
-import { Button, Box, Container, Alert } from '@mui/material';
+import { Button, Alert } from '@mui/material';
 import { Book, CategoryId } from '@/types/book';
 import BookCard from './BookCard';
 import { prisma } from '@/lib/prisma';
@@ -48,65 +48,54 @@ export default async function BookRecommendation({
   const recommendedBooks = await getBooksByCategory(selectedCategory);
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Box sx={{ mb: 3 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            mb: 2,
-          }}
-        >
-          {/* 카테고리 선택 버튼 그룹 */}
-          <Box sx={{ flex: 1 }}>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {categories.map((category) => (
-                <Link
-                  key={category.id}
-                  href={`/?category=${category.id}`}
-                  style={{ textDecoration: 'none', flex: 1 }}
+    <div className="max-w-4xl mx-auto py-4">
+      <div className="flex justify-between items-start mb-6">
+        {/* 카테고리 선택 버튼 그룹 */}
+        <div className="flex-1">
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => (
+              <Link
+                key={category.id}
+                href={`/?category=${category.id}`}
+                style={{ textDecoration: 'none', flex: 1 }}
+              >
+                <Button
+                  variant={
+                    selectedCategory === category.id ? 'contained' : 'outlined'
+                  }
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    py: 1,
+                    px: 2,
+                    fontSize: '0.8rem',
+                    fontWeight: selectedCategory === category.id ? 600 : 400,
+                    borderRadius: '16px',
+                    minWidth: '100px',
+                    width: '100%',
+                  }}
                 >
-                  <Button
-                    variant={
-                      selectedCategory === category.id
-                        ? 'contained'
-                        : 'outlined'
-                    }
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      py: 1,
-                      px: 2,
-                      fontSize: '0.8rem',
-                      fontWeight: selectedCategory === category.id ? 600 : 400,
-                      borderRadius: '16px',
-                      minWidth: '100px',
-                      width: '100%',
-                    }}
-                  >
-                    <span>{category.emoji}</span>
-                    {category.name}
-                  </Button>
-                </Link>
-              ))}
-            </Box>
-          </Box>
-        </Box>
-      </Box>
+                  <span>{category.emoji}</span>
+                  {category.name}
+                </Button>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {recommendedBooks.length === 0 && (
-        <Alert severity="info" sx={{ mb: 2 }}>
+        <Alert severity="info" className="mb-4">
           해당 카테고리에 책이 없습니다.
         </Alert>
       )}
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <div className="flex flex-col gap-4">
         {recommendedBooks.map((book) => (
           <BookCard key={book.id} book={book} currentBooks={recommendedBooks} />
         ))}
-      </Box>
-    </Container>
+      </div>
+    </div>
   );
 }
